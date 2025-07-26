@@ -1,6 +1,4 @@
-mod print;
-
 fn main() {
-	let printers = print::get_printers();
+	let printers = printrs::get_printers();
 	println!("{:#?}", printers);
 }

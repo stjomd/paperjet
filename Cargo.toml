@@ -1,7 +1,16 @@
 [package]
-name = "printds"
+name = "printrs"
 version = "0.1.0"
 edition = "2024"
+
+[lib]
+name = "printrs"
+path = "src/lib.rs"
+doctest = false
+
+[[bin]]
+name = "printrs"
+path = "src/main.rs"
 
 [build-dependencies]
 bindgen = "0.72.0"
