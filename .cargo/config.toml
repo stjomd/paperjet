@@ -1,0 +1,2 @@
+[alias]
+tests = "nextest run --status-level=fail --no-fail-fast"

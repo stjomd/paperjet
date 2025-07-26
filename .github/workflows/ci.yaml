@@ -22,3 +22,5 @@ jobs:
           sudo apt-get install -y libclang-dev libcups2-dev
       - name: Build
         run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose --no-fail-fast

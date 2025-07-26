@@ -12,6 +12,11 @@ pub struct Printer {
 	is_default: bool,
 	options: HashMap<String, String>,
 }
+impl Printer {
+	pub fn get_option(&self, name: &str) -> Option<&String> {
+		self.options.get(name)
+	}
+}
 
 /// Returns a vector of available printers.
 /// If no printers are available on this system, returns an empty list.
