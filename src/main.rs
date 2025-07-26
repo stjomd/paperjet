@@ -1,3 +1,6 @@
+mod print;
+
 fn main() {
-	println!("Hello, world!")
+	let printers = print::get_printers();
+	println!("{:#?}", printers);
 }
