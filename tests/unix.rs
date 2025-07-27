@@ -7,31 +7,31 @@ use printrs::Printer;
 
 #[test]
 fn get_printers_returns_correct_information_of_printer() {
-	// Create a dummy printer (removed from lpstat on drop)
-	let dummy = DummyPrinter::try_new().expect("Could not create dummy printer");
+	// Create a fake printer (removed from lpstat on drop)
+	let fake = FakePrinter::try_new().expect("Could not create a fake printer");
 	// Get information
 	let printers = printrs::get_printers();
 
-	// Only one printer with the dummy's name should exist
-	let dummy_printers = printers
+	// Only one printer with the fake's name should exist
+	let fake_printers = printers
 		.iter()
-		.filter(|p| p.name == dummy.name)
+		.filter(|p| p.name == fake.name)
 		.collect::<Vec<&Printer>>();
-	assert_eq!(dummy_printers.len(), 1);
+	assert_eq!(fake_printers.len(), 1);
 
-	// The dummy printer should have correct information
-	let dummy_printer = dummy_printers[0];
-	assert_eq!(dummy_printer.name, dummy.name);
+	// The fake printer should have correct information
+	let fake_printer = fake_printers[0];
+	assert_eq!(fake_printer.name, fake.name);
 	assert_eq!(
-		dummy_printer
+		fake_printer
 			.get_option("printer-info")
 			.expect("option printer-info is not present"),
-		&dummy.name
+		&fake.name
 	);
 	assert_eq!(
-		dummy_printer
+		fake_printer
 			.get_option("device-uri")
 			.expect("option device-uri is not present"),
-		&dummy.device_uri
+		&fake.device_uri
 	);
 }
