@@ -28,10 +28,12 @@ mod dummy {
 		pub fn try_new() -> Result<Self, std::io::Error> {
 			let name = "printrs-test-".to_owned() + &uuid::Uuid::new_v4().to_string();
 			let device_uri = "file:/dev/null".to_owned();
-			Command::new("lpadmin")
+			let output = Command::new("lpadmin")
 				.args(["-p", &name])
 				.args(["-v", &device_uri])
 				.output()?;
+			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+			println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
 			Ok(Self { name, device_uri })
 		}
 	}
@@ -46,6 +48,9 @@ mod dummy {
 
 			let error_msg = format!("Could not drop {} with lpadmin", self.name);
 			let output = result.expect(&error_msg);
+
+			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+			println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
 
 			if !output.status.success() {
 				panic!(
