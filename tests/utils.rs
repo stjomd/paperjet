@@ -28,7 +28,7 @@ mod dummy {
 		pub fn try_new() -> Result<Self, std::io::Error> {
 			let name = "printrs-test-".to_owned() + &uuid::Uuid::new_v4().to_string();
 			let device_uri = "file:/dev/null".to_owned();
-			let output = Command::new("lpadmin")
+			let output = Self::lpadmin()
 				.args(["-p", &name])
 				.args(["-v", &device_uri])
 				.output()?;
@@ -36,12 +36,22 @@ mod dummy {
 			println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
 			Ok(Self { name, device_uri })
 		}
+		fn lpadmin() -> Command {
+			match std::env::var("USE_SUDO_LPADMIN") {
+				Ok(_) => {
+					let mut _command = Command::new("sudo");
+					_command.arg("lpadmin");
+					_command
+				}
+				Err(_) => Command::new("lpadmin"),
+			}
+		}
 	}
 
 	impl Drop for DummyPrinter {
 		/// Removes the printer from the system.
 		fn drop(&mut self) {
-			let result = Command::new("lpadmin").args(["-x", &self.name]).output();
+			let result = Self::lpadmin().args(["-x", &self.name]).output();
 			if std::thread::panicking() {
 				return;
 			}

@@ -24,3 +24,5 @@ jobs:
         run: cargo build --verbose
       - name: Test
         run: cargo test --verbose --no-fail-fast -- --nocapture
+        env:
+          USE_SUDO_LPADMIN: 1
