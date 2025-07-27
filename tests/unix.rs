@@ -8,7 +8,7 @@ use printrs::Printer;
 #[test]
 fn get_printers_returns_correct_information_of_printer() {
 	// Create a fake printer (removed from lpstat on drop)
-	let fake = FakePrinter::try_new().expect("Could not create dummy printer");
+	let fake = FakePrinter::try_new().expect("Could not create a fake printer");
 	// Get information
 	let printers = printrs::get_printers();
 
