@@ -19,11 +19,13 @@ pub enum Command {
 
 #[derive(clap::Args)]
 pub struct ListArgs {
-	#[arg(short, long)]
 	/// List more information about each printer.
+	#[arg(short, long)]
 	detailed: bool,
 }
 
-pub fn parse() -> Args {
-	Args::parse()
+impl Args {
+	pub fn parse() -> Self {
+		<Self as Parser>::parse()
+	}
 }
