@@ -22,4 +22,9 @@ impl Printer {
 	pub fn get_option(&self, name: &str) -> Option<&String> {
 		self.options.get(name)
 	}
+	/// Returns a human-friendly name of this printer.
+	/// If no such name is available, returns the regular name (identifier).
+	pub fn get_human_name(&self) -> &String {
+		self.get_option("printer-info").unwrap_or(&self.name)
+	}
 }

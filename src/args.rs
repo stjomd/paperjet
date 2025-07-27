@@ -14,14 +14,18 @@ pub struct Args {
 #[command(disable_help_subcommand = true)]
 pub enum Command {
 	/// Lists available printers.
-	List(ListArgs),
+	List,
+	/// Displays information about a printer.
+	Display(DisplayArgs),
 }
 
 #[derive(clap::Args)]
-pub struct ListArgs {
-	/// List more information about each printer.
+pub struct DisplayArgs {
+	/// The ID of the printer (as determined by the `list` command).
+	pub id: usize,
+	/// Display all options of the printer.
 	#[arg(short, long)]
-	detailed: bool,
+	pub options: bool,
 }
 
 impl Args {
