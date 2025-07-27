@@ -12,7 +12,20 @@ pub(crate) use assert_matches;
 
 #[cfg(target_family = "unix")]
 mod dummy {
+	use std::env::var;
 	use std::process::Command;
+
+	/// Constructs an instance of either `lpadmin` or `sudo lpadmin` command.
+	fn lpadmin() -> Command {
+		match var("USE_SUDO_LPADMIN") {
+			Ok(_) => {
+				let mut _command = Command::new("sudo");
+				_command.arg("lpadmin");
+				_command
+			}
+			Err(_) => Command::new("lpadmin"),
+		}
+	}
 
 	/// Represents a dummy printer on the system.
 	/// Creating an instance with [`Self::try_new`] registers a destination
@@ -28,39 +41,24 @@ mod dummy {
 		pub fn try_new() -> Result<Self, std::io::Error> {
 			let name = "printrs-test-".to_owned() + &uuid::Uuid::new_v4().to_string();
 			let device_uri = "file:/dev/null".to_owned();
-			let output = Self::lpadmin()
+			lpadmin()
 				.args(["-p", &name])
 				.args(["-v", &device_uri])
 				.output()?;
-			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-			println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
 			Ok(Self { name, device_uri })
-		}
-		fn lpadmin() -> Command {
-			match std::env::var("USE_SUDO_LPADMIN") {
-				Ok(_) => {
-					let mut _command = Command::new("sudo");
-					_command.arg("lpadmin");
-					_command
-				}
-				Err(_) => Command::new("lpadmin"),
-			}
 		}
 	}
 
 	impl Drop for DummyPrinter {
 		/// Removes the printer from the system.
 		fn drop(&mut self) {
-			let result = Self::lpadmin().args(["-x", &self.name]).output();
+			let result = lpadmin().args(["-x", &self.name]).output();
 			if std::thread::panicking() {
 				return;
 			}
 
 			let error_msg = format!("Could not drop {} with lpadmin", self.name);
 			let output = result.expect(&error_msg);
-
-			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-			println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
 
 			if !output.status.success() {
 				panic!(
