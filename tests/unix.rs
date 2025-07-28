@@ -2,7 +2,7 @@
 
 mod utils;
 
-use crate::utils::*;
+use crate::utils::unixutils::FakePrinter;
 use printrs::Printer;
 
 #[test]
