@@ -14,16 +14,17 @@ fn main() {
 
 fn cups_bindings() {
 	let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+	let builder = bindgen::builder().header("headers/cups.h");
 
-	let bindings = bindgen::builder()
-		.header("headers/cups.h")
-		// Allowlist ---
+	// Allowlist:
+	let builder = builder
 		.allowlist_function("cupsGetDests")
-		.allowlist_function("cupsFreeDests")
-		// Allowlist ---
+		.allowlist_function("cupsFreeDests");
+
+	// Generate & write:
+	let bindings = builder
 		.generate()
 		.expect("Unable to generate bindings for CUPS");
-
 	bindings
 		.write_to_file(out_dir.join("cups-bindings.rs"))
 		.expect("Unable to write bindings for CUPS");
