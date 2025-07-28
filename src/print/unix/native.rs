@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::{ffi, ptr, slice};
 
 use crate::print::unix::cups;
-use crate::print::{CrossPlatformApi, Printer, TargetPlatform};
+use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
-impl CrossPlatformApi for TargetPlatform {
+impl CrossPlatformApi for PlatformSpecificApi {
 	fn get_printers() -> Vec<Printer> {
 		unsafe {
 			let mut ptr_dests = ptr::null_mut();

@@ -1,4 +1,4 @@
-# printds
+# printrs
 
 > [!WARNING]
 > Windows is currently not supported.

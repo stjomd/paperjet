@@ -1,12 +1,26 @@
 use std::collections::HashMap;
 
-use crate::{CrossPlatformApi, TargetPlatform};
+// MARK: - Public API Methods
 
 /// Returns a vector of available printers.
 /// If no printers are available on this system, returns an empty list.
 pub fn get_printers() -> Vec<Printer> {
-	TargetPlatform::get_printers()
+	PlatformSpecificApi::get_printers()
 }
+
+// MARK: - Public API trait
+
+/// A unit struct representing the current platform.
+/// There should be a platform-specific implementation of [`PlatformApi`] for this struct,
+/// and a module containing this implementation should be imported above.
+pub struct PlatformSpecificApi;
+/// A trait that defines the public API of this crate.
+pub trait CrossPlatformApi {
+	/// See [`get_printers()`].
+	fn get_printers() -> Vec<Printer>;
+}
+
+// MARK: - Structs
 
 /// A struct representing a printer.
 #[allow(dead_code)]
