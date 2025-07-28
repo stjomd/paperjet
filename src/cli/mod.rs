@@ -1,6 +1,7 @@
 use crate::cli::args::{Args, Command};
 
 pub mod args;
+mod common;
 mod display;
 mod list;
 

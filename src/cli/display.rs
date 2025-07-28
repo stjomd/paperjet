@@ -1,23 +1,17 @@
 use std::collections::HashMap;
-use std::{cmp, process};
+use std::process;
 
 use colored::Colorize;
 use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
+use crate::cli::common::get_sorted_printers;
 
 type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
 pub fn display(args: DisplayArgs) {
-	let mut printers = printrs::get_printers();
-	printers.sort_by(|a, b| {
-		if a.is_default {
-			return cmp::Ordering::Less;
-		}
-		a.name.cmp(&b.name)
-	});
-
+	let printers = get_sorted_printers();
 	let filtered_printers = printers
 		.iter()
 		.enumerate()

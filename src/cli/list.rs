@@ -1,18 +1,10 @@
-use std::cmp;
-
 use colored::Colorize;
+
+use crate::cli::common::get_sorted_printers;
 
 /// The `list` command.
 pub fn list() {
-	let mut printers = printrs::get_printers();
-	printers.sort_by(|a, b| {
-		if a.is_default {
-			return cmp::Ordering::Less;
-		}
-		a.name.cmp(&b.name)
-	});
-
-	for (i, printer) in printers.iter().enumerate() {
+	for (i, printer) in get_sorted_printers().iter().enumerate() {
 		let index = i + 1;
 		let name = printer.get_option("printer-info").unwrap_or(&printer.name);
 
