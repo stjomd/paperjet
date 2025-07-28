@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use std::{cmp, process};
 
 use colored::Colorize;
 use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
+
+type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
 pub fn display(args: DisplayArgs) {
@@ -30,54 +33,78 @@ pub fn display(args: DisplayArgs) {
 
 	println!("{}\n", printer.get_human_name().bold());
 
-	println!("Identifier: {}", printer.name);
-	println!(
-		"Model: {}",
-		printer
-			.get_option("printer-make-and-model")
-			.unwrap_or(&"unknown".to_owned())
-	);
-	println!("Default: {}", printer.is_default);
-
-	let state = printer
-		.get_option("printer-state")
-		.and_then(|value| match value.as_str() {
-			"3" => Some("idle"),
-			"4" => Some("printing"),
-			"5" => Some("stopped"),
-			_ => None,
-		});
-	println!("State: {}", state.unwrap_or("unknown"));
-
-	println!(
-		"Accepting jobs: {}",
-		printer
-			.get_option("printer-is-accepting-jobs")
-			.unwrap_or(&"unknown".to_owned())
-	);
-
-	let marker_level = get_marker_level(printer);
-	let marker_level = if let Some(percentage) = marker_level {
-		percentage.to_string()
-	} else {
-		"unknown".to_owned()
-	};
-	println!("Ink level: {marker_level}%");
+	let info = collect_information(printer);
+	print_key_value_pairs(&info);
 
 	if args.options {
+		let options = collect_options(printer);
 		let header = format!("Options ({}):", printer.options.len());
 		println!("\n{}", header.bold());
-		display_options(printer);
+		print_key_value_pairs(&options);
 	}
 }
 
-/// Prints options of a printer.
-fn display_options(printer: &Printer) {
-	let mut entries = printer.options.iter().collect::<Vec<(&String, &String)>>();
+/// Collects basic printer information into a map.
+fn collect_information(printer: &Printer) -> KeyValueMap {
+	let mut map = HashMap::new();
+
+	map.insert("Identifier".to_owned(), Some(printer.name.to_owned()));
+
+	map.insert(
+		"Model".to_owned(),
+		printer
+			.get_option("printer-make-and-model")
+			.map(|value| value.to_owned()),
+	);
+
+	map.insert(
+		"State".to_owned(),
+		printer
+			.get_option("printer-state")
+			.and_then(|value| match value.as_str() {
+				"3" => Some("idle"),
+				"4" => Some("printing"),
+				"5" => Some("stopped"),
+				_ => None,
+			})
+			.map(|value| value.to_owned()),
+	);
+
+	map.insert(
+		"Accepting jobs".to_owned(),
+		printer
+			.get_option("printer-is-accepting-jobs")
+			.map(|value| value.to_owned()),
+	);
+
+	map.insert(
+		"Ink level".to_owned(),
+		get_marker_level(printer).map(|percentage| percentage.to_string() + "%"),
+	);
+
+	map
+}
+
+/// Collects printer options into the map.
+fn collect_options(printer: &Printer) -> KeyValueMap {
+	printer
+		.options
+		.iter()
+		.map(|(k, v)| (k.to_owned(), Some(v.to_owned())))
+		.collect::<HashMap<_, _>>()
+}
+
+/// Prints the map in alphabetical order of the keys.
+fn print_key_value_pairs(map: &KeyValueMap) {
+	let mut entries = map.iter().collect::<Vec<_>>();
 	entries.sort_by_key(|entry| entry.0);
 
-	for (name, value) in entries {
-		println!("{name}: {value}");
+	for (key, _value) in entries {
+		match _value.as_ref() {
+			None => println!("{key}: {}", "<unknown>".italic()),
+			Some(value) if value.is_empty() => println!("{key}: {}", "<unknown>".italic()),
+			Some(value) => println!("{key}: {value}"),
+		}
 	}
 }
 
