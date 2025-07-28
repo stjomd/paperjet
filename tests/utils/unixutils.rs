@@ -1,4 +1,4 @@
-use std::{env, process, thread};
+use std::{env, process};
 
 /// Represents a fake printer on the system.
 /// Creating an instance with [`Self::try_new`] registers a new dest with CUPS.
@@ -17,6 +17,7 @@ impl FakePrinter {
 			.args(["-p", &name])
 			.args(["-v", &device_uri])
 			.output()?;
+		eprintln!("Created fake printer {name}");
 		Ok(Self { name, device_uri })
 	}
 }
@@ -25,21 +26,20 @@ impl Drop for FakePrinter {
 	/// Removes the printer from the system.
 	fn drop(&mut self) {
 		let result = lpadmin().args(["-x", &self.name]).output();
-		if thread::panicking() {
+		let Ok(output) = result else {
+			eprintln!("Could not drop {} with lpadmin", self.name);
 			return;
-		}
-
-		let error_msg = format!("Could not drop {} with lpadmin", self.name);
-		let output = result.expect(&error_msg);
+		};
 
 		if !output.status.success() {
-			panic!(
+			eprintln!(
 				"Could not drop {} with lpadmin:\n- exit code: {}\n- stderr: {}",
 				self.name,
 				output.status.code().unwrap_or(-1),
 				String::from_utf8_lossy(&output.stderr)
 			)
 		}
+		eprintln!("Dropped fake printer {}", self.name);
 	}
 }
 

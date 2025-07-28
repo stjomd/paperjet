@@ -13,7 +13,6 @@ fn main() {
 }
 
 fn cups_bindings() {
-	let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 	let builder = bindgen::builder().header("headers/cups.h");
 
 	// Allowlist:
@@ -22,6 +21,7 @@ fn cups_bindings() {
 		.allowlist_function("cupsFreeDests");
 
 	// Generate & write:
+	let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 	let bindings = builder
 		.generate()
 		.expect("Unable to generate bindings for CUPS");
