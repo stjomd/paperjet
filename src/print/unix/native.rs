@@ -21,6 +21,48 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			printers
 		}
 	}
+
+	fn print_file() {
+		unsafe {
+			let mut ptr_dests = ptr::null_mut();
+			let num_dests = cups::cupsGetDests(&mut ptr_dests);
+			let chosen_dest = ptr_dests; // first FIXME
+
+			let info = cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest);
+
+			// Set options
+			let mut ptr_opts = ptr::null_mut();
+			let mut num_opts = 0;
+			num_opts = cups::cupsAddOption(
+				cups::consts::opts::CUPS_COPIES,
+				c"1".as_ptr(),
+				num_opts,
+				&mut ptr_opts,
+			);
+
+			// Create job
+			let mut job_id = 0;
+			let status = cups::cupsCreateDestJob(
+				cups::consts::http::CUPS_HTTP_DEFAULT,
+				chosen_dest,
+				info,
+				&mut job_id,
+				c"TestTitlePrintrs".as_ptr(),
+				num_opts,
+				ptr_opts,
+			);
+
+			if status != cups::ipp_status_e::IPP_STATUS_OK {
+				let message = cups::cupsLastErrorString();
+				let message = ffi::CStr::from_ptr(message).to_string_lossy();
+				eprintln!("Could not create print job: {message}")
+			}
+
+			eprintln!("Created job: {job_id}");
+
+			cups::cupsFreeDests(num_dests, ptr_dests);
+		}
+	}
 }
 
 /// Maps an instance of [`cups::cups_dest_t`] to a [`Printer`].

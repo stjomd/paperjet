@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{ArgAction, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -17,6 +19,8 @@ pub enum Command {
 	List,
 	/// Displays information about a printer.
 	Display(DisplayArgs),
+	/// Prints a document.
+	Print(PrintArgs),
 }
 
 #[derive(clap::Args)]
@@ -26,6 +30,12 @@ pub struct DisplayArgs {
 	/// Display all options of the printer.
 	#[arg(short, long)]
 	pub options: bool,
+}
+
+#[derive(clap::Args)]
+pub struct PrintArgs {
+	/// The path to the file.
+	pub input: PathBuf,
 }
 
 impl Args {

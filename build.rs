@@ -18,7 +18,14 @@ fn cups_bindings() {
 	// Allowlist:
 	let builder = builder
 		.allowlist_function("cupsGetDests")
-		.allowlist_function("cupsFreeDests");
+		.allowlist_function("cupsFreeDests")
+		.allowlist_function("cupsCreateDestJob")
+		.allowlist_function("cupsCopyDestInfo")
+		.allowlist_function("cupsLastErrorString")
+		.allowlist_function("cupsAddOption")
+		.allowlist_function("cupsFreeDestInfo");
+
+	let builder = builder.newtype_enum("ipp_status_e");
 
 	// Generate & write:
 	let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());

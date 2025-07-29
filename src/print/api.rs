@@ -8,6 +8,11 @@ pub fn get_printers() -> Vec<Printer> {
 	PlatformSpecificApi::get_printers()
 }
 
+/// Prints a specified file.
+pub fn print_file() {
+	PlatformSpecificApi::print_file()
+}
+
 // MARK: - Public API trait
 
 /// A unit struct representing the current platform.
@@ -16,8 +21,10 @@ pub fn get_printers() -> Vec<Printer> {
 pub struct PlatformSpecificApi;
 /// A trait that defines the public API of this crate.
 pub trait CrossPlatformApi {
-	/// See [`get_printers()`].
+	/// See [`crate::print::get_printers()`].
 	fn get_printers() -> Vec<Printer>;
+	/// See [`crate::print::print_file()`].
+	fn print_file();
 }
 
 // MARK: - Structs
