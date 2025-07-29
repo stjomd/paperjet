@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::Read;
 use std::os::unix::ffi::OsStrExt;
-use std::{ffi, fs, path, ptr, slice};
+use std::{borrow, ffi, fs, path, ptr, slice};
 
 use crate::print::unix::cups;
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
@@ -120,8 +120,7 @@ fn create_job(title: &str, context: &JobContext) -> ffi::c_int {
 		);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			let message = cups::cupsLastErrorString();
-			let message = ffi::CStr::from_ptr(message).to_string_lossy();
-			eprintln!("Could not create print job: {message}");
+			eprintln!("Could not create print job: {}", cstr_to_str(message));
 			panic!("djksl"); // FIXME
 		}
 	}
@@ -147,8 +146,7 @@ fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, context: &
 		);
 		if fstatus != cups::http_status_e::HTTP_STATUS_CONTINUE {
 			let message = cups::cupsLastErrorString();
-			let message = ffi::CStr::from_ptr(message).to_string_lossy();
-			eprintln!("Could not begin file transfer: {message}");
+			eprintln!("Could not begin file transfer: {}", cstr_to_str(message));
 			panic!("fjdksjrkekem"); // FIXME
 		}
 	}
@@ -172,8 +170,7 @@ fn transfer_file(path: &path::Path, context: &JobContext) {
 			);
 			if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
 				let message = cups::cupsLastErrorString();
-				let message = ffi::CStr::from_ptr(message).to_string_lossy();
-				eprintln!("Could not transfer file bytes: {message}");
+				eprintln!("Could not transfer file bytes: {}", cstr_to_str(message));
 				return;
 			}
 		}
@@ -186,8 +183,7 @@ fn finish_file_transfer(context: &JobContext) {
 		let status = cups::cupsFinishDestDocument(context.http, context.destination, context.info);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			let message = cups::cupsLastErrorString();
-			let message = ffi::CStr::from_ptr(message).to_string_lossy();
-			eprintln!("Could not finish file transfer: {message}");
+			eprintln!("Could not finish file transfer: {}", cstr_to_str(message));
 			panic!("mkqkiswjui"); // FIXMEs
 		}
 	}
@@ -218,8 +214,13 @@ unsafe fn map_dest_to_printer(dest: &cups::cups_dest_t) -> Printer {
 	}
 }
 
+/// Performs lossy conversion from a [`ffi::CStr`] into [`String`].
+/// The result is either a borrowed value or an owned value.
+unsafe fn cstr_to_str(ptr: *const ffi::c_char) -> borrow::Cow<'static, str> {
+	unsafe { ffi::CStr::from_ptr(ptr).to_string_lossy() }
+}
 /// Constructs an owned UTF-8 string from a valid pointer to a valid C-string.
 /// Invalid characters are replaced with the replacement character.
 unsafe fn cstr_to_string(ptr: *const ffi::c_char) -> String {
-	unsafe { ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() }
+	unsafe { cstr_to_str(ptr).into_owned() }
 }
