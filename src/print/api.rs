@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path;
 
 // MARK: - Public API Methods
 
@@ -9,8 +10,8 @@ pub fn get_printers() -> Vec<Printer> {
 }
 
 /// Prints a specified file.
-pub fn print_file() {
-	PlatformSpecificApi::print_file()
+pub fn print_file(path: path::PathBuf) {
+	PlatformSpecificApi::print_file(&path)
 }
 
 // MARK: - Public API trait
@@ -24,7 +25,7 @@ pub trait CrossPlatformApi {
 	/// See [`crate::print::get_printers()`].
 	fn get_printers() -> Vec<Printer>;
 	/// See [`crate::print::print_file()`].
-	fn print_file();
+	fn print_file(path: &path::Path);
 }
 
 // MARK: - Structs

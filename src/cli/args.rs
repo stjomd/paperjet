@@ -1,6 +1,5 @@
-use std::path::PathBuf;
-
 use clap::{ArgAction, Parser, Subcommand};
+use std::path;
 
 #[derive(Parser)]
 #[command(version, disable_version_flag = true)]
@@ -35,7 +34,7 @@ pub struct DisplayArgs {
 #[derive(clap::Args)]
 pub struct PrintArgs {
 	/// The path to the file.
-	pub input: PathBuf,
+	pub input: path::PathBuf,
 }
 
 impl Args {
