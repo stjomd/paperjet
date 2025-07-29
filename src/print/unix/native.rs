@@ -33,33 +33,10 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			let info = cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest);
 
 			// Set options
-			let mut ptr_options = ptr::null_mut();
-			let mut num_options = 0;
-			num_options = cups::cupsAddOption(
-				cups::consts::opts::CUPS_COPIES,
-				c"1".as_ptr(),
-				num_options,
-				&mut ptr_options,
-			);
+			let options = prepare_options_for_job(1);
 
 			// Create job
-			let mut job_id = 0;
-			let status = cups::cupsCreateDestJob(
-				cups::consts::http::CUPS_HTTP_DEFAULT,
-				chosen_dest,
-				info,
-				&mut job_id,
-				c"TestTitlePrintrs".as_ptr(), // FIXME
-				num_options,
-				ptr_options,
-			);
-			if status != cups::ipp_status_e::IPP_STATUS_OK {
-				let message = cups::cupsLastErrorString();
-				let message = ffi::CStr::from_ptr(message).to_string_lossy();
-				eprintln!("Could not create print job: {message}");
-				return;
-			}
-			eprintln!("Created job: {job_id}");
+			let job_id = create_job("printrs", options, chosen_dest, info);
 
 			// Initiate file transfer
 			// FIXME: error handling
@@ -74,8 +51,8 @@ impl CrossPlatformApi for PlatformSpecificApi {
 				job_id,
 				filename.as_ptr(),
 				cups::consts::format::CUPS_FORMAT_AUTO,
-				num_options,
-				ptr_options,
+				options.num,
+				options.ptr,
 				cups::consts::bool::TRUE,
 			);
 			if fstatus != cups::http_status_e::HTTP_STATUS_CONTINUE {
@@ -124,6 +101,65 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			cups::cupsFreeDests(num_dests, ptr_dests);
 		}
 	}
+}
+
+#[derive(Clone, Copy)]
+struct FatPointer<T> {
+	num: ffi::c_int,
+	ptr: T,
+}
+type OptionsPointer = FatPointer<*mut cups::cups_option_t>;
+
+fn prepare_options_for_job(copies: u32) -> OptionsPointer {
+	let mut ptr_options = ptr::null_mut();
+	let mut num_options = 0;
+
+	let copies = copies.to_string();
+	let copies = ffi::CString::new(copies).expect("Could not convert copies to CString"); // FIXME
+	num_options = unsafe {
+		cups::cupsAddOption(
+			cups::consts::opts::CUPS_COPIES,
+			copies.as_ptr(),
+			num_options,
+			&mut ptr_options,
+		)
+	};
+
+	OptionsPointer {
+		num: num_options,
+		ptr: ptr_options,
+	}
+}
+
+unsafe fn create_job(
+	title: &str,
+	options: OptionsPointer,
+	dest: *mut cups::cups_dest_t,
+	info: *mut cups::cups_dinfo_t,
+) -> ffi::c_int {
+	let title = ffi::CString::new(title).expect("Could not convert title to CString");
+
+	let mut job_id = 0;
+	let status = unsafe {
+		cups::cupsCreateDestJob(
+			cups::consts::http::CUPS_HTTP_DEFAULT,
+			dest,
+			info,
+			&mut job_id,
+			title.as_ptr(),
+			options.num,
+			options.ptr,
+		)
+	};
+	if status != cups::ipp_status_e::IPP_STATUS_OK {
+		let message = unsafe { cups::cupsLastErrorString() };
+		let message = unsafe { cstr_to_string(message) };
+		eprintln!("Could not create print job: {message}");
+		panic!("djksl"); // FIXME
+	}
+
+	eprintln!("Created job: {job_id}");
+	job_id
 }
 
 /// Maps an instance of [`cups::cups_dest_t`] to a [`Printer`].
