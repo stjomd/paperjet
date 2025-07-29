@@ -42,6 +42,8 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			finish_file_transfer(chosen_dest, info);
 
 			// Free memory
+			cups::cupsFreeDestInfo(info);
+			cups::cupsFreeOptions(options.num, options.ptr);
 			cups::cupsFreeDests(num_dests, ptr_dests);
 		}
 	}
@@ -86,10 +88,10 @@ unsafe fn create_job(
 	info: *mut cups::cups_dinfo_t,
 ) -> ffi::c_int {
 	let title = ffi::CString::new(title).expect("Could not convert title to CString");
-
 	let mut job_id = 0;
-	let status = unsafe {
-		cups::cupsCreateDestJob(
+
+	unsafe {
+		let status = cups::cupsCreateDestJob(
 			cups::consts::http::CUPS_HTTP_DEFAULT,
 			dest,
 			info,
@@ -97,13 +99,13 @@ unsafe fn create_job(
 			title.as_ptr(),
 			options.num,
 			options.ptr,
-		)
-	};
-	if status != cups::ipp_status_e::IPP_STATUS_OK {
-		let message = unsafe { cups::cupsLastErrorString() };
-		let message = unsafe { ffi::CStr::from_ptr(message).to_string_lossy() };
-		eprintln!("Could not create print job: {message}");
-		panic!("djksl"); // FIXME
+		);
+		if status != cups::ipp_status_e::IPP_STATUS_OK {
+			let message = cups::cupsLastErrorString();
+			let message = ffi::CStr::from_ptr(message).to_string_lossy();
+			eprintln!("Could not create print job: {message}");
+			panic!("djksl"); // FIXME
+		}
 	}
 
 	eprintln!("Created job: {job_id}");
@@ -119,9 +121,8 @@ unsafe fn initiate_file_transfer(
 	options: OptionsPointer,
 ) {
 	let filename = ffi::CString::new(file_name.as_bytes()).expect("Could not create CString"); // FIXME
-
-	let fstatus = unsafe {
-		cups::cupsStartDestDocument(
+	unsafe {
+		let fstatus = cups::cupsStartDestDocument(
 			cups::consts::http::CUPS_HTTP_DEFAULT,
 			dest,
 			info,
@@ -131,13 +132,13 @@ unsafe fn initiate_file_transfer(
 			options.num,
 			options.ptr,
 			cups::consts::bool::TRUE,
-		)
-	};
-	if fstatus != cups::http_status_e::HTTP_STATUS_CONTINUE {
-		let message = unsafe { cups::cupsLastErrorString() };
-		let message = unsafe { ffi::CStr::from_ptr(message).to_string_lossy() };
-		eprintln!("Could not begin file transfer: {message}");
-		panic!("fjdksjrkekem"); // FIXME
+		);
+		if fstatus != cups::http_status_e::HTTP_STATUS_CONTINUE {
+			let message = cups::cupsLastErrorString();
+			let message = ffi::CStr::from_ptr(message).to_string_lossy();
+			eprintln!("Could not begin file transfer: {message}");
+			panic!("fjdksjrkekem"); // FIXME
+		}
 	}
 }
 
@@ -151,33 +152,33 @@ fn transfer_file(path: &path::Path) {
 		if length == 0 {
 			break;
 		}
-
-		let status = unsafe {
-			cups::cupsWriteRequestData(
+		unsafe {
+			let status = cups::cupsWriteRequestData(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
 				buf.as_ptr() as *const ffi::c_char,
 				length,
-			)
-		};
-
-		if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
-			let message = unsafe { cups::cupsLastErrorString() };
-			let message = unsafe { ffi::CStr::from_ptr(message).to_string_lossy() };
-			eprintln!("Could not transfer file bytes: {message}");
-			return;
+			);
+			if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
+				let message = cups::cupsLastErrorString();
+				let message = ffi::CStr::from_ptr(message).to_string_lossy();
+				eprintln!("Could not transfer file bytes: {message}");
+				return;
+			}
 		}
 	}
 }
 
 /// Signals that the file transfer has finished.
 unsafe fn finish_file_transfer(dest: *mut cups::cups_dest_t, info: *mut cups::cups_dinfo_t) {
-	let status =
-		unsafe { cups::cupsFinishDestDocument(cups::consts::http::CUPS_HTTP_DEFAULT, dest, info) };
-	if status != cups::ipp_status_e::IPP_STATUS_OK {
-		let message = unsafe { cups::cupsLastErrorString() };
-		let message = unsafe { ffi::CStr::from_ptr(message).to_string_lossy() };
-		eprintln!("Could not finish file transfer: {message}");
-		panic!("mkqkiswjui"); // FIXME
+	unsafe {
+		let status =
+			cups::cupsFinishDestDocument(cups::consts::http::CUPS_HTTP_DEFAULT, dest, info);
+		if status != cups::ipp_status_e::IPP_STATUS_OK {
+			let message = cups::cupsLastErrorString();
+			let message = ffi::CStr::from_ptr(message).to_string_lossy();
+			eprintln!("Could not finish file transfer: {message}");
+			panic!("mkqkiswjui"); // FIXMEs
+		}
 	}
 	eprintln!("File transfer finished!");
 }
