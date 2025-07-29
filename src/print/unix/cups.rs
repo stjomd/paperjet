@@ -14,7 +14,7 @@ pub mod consts {
 	pub mod bool {
 		use super::*;
 		pub const TRUE: ffi::c_int = 1;
-		pub const FALSE: ffi::c_int = 0;
+		// pub const FALSE: ffi::c_int = 0;
 	}
 
 	pub mod http {
