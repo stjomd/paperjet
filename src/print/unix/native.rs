@@ -29,22 +29,46 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		let num_dests = unsafe { cups::cupsGetDests(&mut ptr_dests) };
 		let chosen_dest = ptr_dests; // first FIXME
 
+		// TODO: initializer for JobContext => guarantee JobContext is always safe
+		// TODO: (i.e. pointers inside are valid) => no need to declare functions that take
+		// TODO: &context as unsafe. Atm fns are marked safe but aren't
+		let context = JobContext {
+			http: cups::consts::http::CUPS_HTTP_DEFAULT,
+			options: prepare_options_for_job(1),
+			destination: chosen_dest,
+			info: unsafe {
+				cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest)
+			},
+		};
+		let job_id = create_job("printrs", &context);
+
+		// Transfer file
+		let file_name = path.file_name().expect("Could not extract file name"); // FIXME
+		initiate_file_transfer(job_id, file_name, &context);
+		transfer_file(path, &context);
+		finish_file_transfer(&context);
+
+		// FIXME: Free memory FIXME (choose dest differently?)
 		unsafe {
-			// Set up job
-			let info = cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest);
-			let options = prepare_options_for_job(1);
-			let job_id = create_job("printrs", options, chosen_dest, info);
-
-			// Transfer file
-			let file_name = path.file_name().expect("Could not extract file name"); // FIXME
-			initiate_file_transfer(job_id, file_name, chosen_dest, info, options);
-			transfer_file(path);
-			finish_file_transfer(chosen_dest, info);
-
-			// Free memory
-			cups::cupsFreeDestInfo(info);
-			cups::cupsFreeOptions(options.num, options.ptr);
 			cups::cupsFreeDests(num_dests, ptr_dests);
+		}
+	}
+}
+
+/// Stores information related to a print job.
+/// Implements [`Drop`] and will free the memory behind `options`
+/// and `info` pointers once the owner goes out of scope.
+struct JobContext {
+	http: *mut cups::http_t,
+	options: FatPointer<*mut cups::cups_option_t>,
+	destination: *mut cups::cups_dest_t,
+	info: *mut cups::cups_dinfo_t,
+}
+impl Drop for JobContext {
+	fn drop(&mut self) {
+		unsafe {
+			cups::cupsFreeDestInfo(self.info);
+			cups::cupsFreeOptions(self.options.num, self.options.ptr);
 		}
 	}
 }
@@ -55,11 +79,10 @@ struct FatPointer<T> {
 	num: ffi::c_int,
 	ptr: T,
 }
-type OptionsPointer = FatPointer<*mut cups::cups_option_t>;
 
 /// Configures options for the print job.
 /// Returns a pointer to the options array.
-fn prepare_options_for_job(copies: u32) -> OptionsPointer {
+fn prepare_options_for_job(copies: u32) -> FatPointer<*mut cups::cups_option_t> {
 	let mut ptr_options = ptr::null_mut();
 	let mut num_options = 0;
 
@@ -74,31 +97,26 @@ fn prepare_options_for_job(copies: u32) -> OptionsPointer {
 		)
 	};
 
-	OptionsPointer {
+	FatPointer {
 		num: num_options,
 		ptr: ptr_options,
 	}
 }
 
 /// Creates a print job.
-unsafe fn create_job(
-	title: &str,
-	options: OptionsPointer,
-	dest: *mut cups::cups_dest_t,
-	info: *mut cups::cups_dinfo_t,
-) -> ffi::c_int {
+fn create_job(title: &str, context: &JobContext) -> ffi::c_int {
 	let title = ffi::CString::new(title).expect("Could not convert title to CString");
 	let mut job_id = 0;
 
 	unsafe {
 		let status = cups::cupsCreateDestJob(
-			cups::consts::http::CUPS_HTTP_DEFAULT,
-			dest,
-			info,
+			context.http,
+			context.destination,
+			context.info,
 			&mut job_id,
 			title.as_ptr(),
-			options.num,
-			options.ptr,
+			context.options.num,
+			context.options.ptr,
 		);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			let message = cups::cupsLastErrorString();
@@ -113,24 +131,18 @@ unsafe fn create_job(
 }
 
 /// Signals to initiate a file transfer to a specified print job.
-unsafe fn initiate_file_transfer(
-	job_id: ffi::c_int,
-	file_name: &ffi::OsStr,
-	dest: *mut cups::cups_dest_t,
-	info: *mut cups::cups_dinfo_t,
-	options: OptionsPointer,
-) {
+fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, context: &JobContext) {
 	let filename = ffi::CString::new(file_name.as_bytes()).expect("Could not create CString"); // FIXME
 	unsafe {
 		let fstatus = cups::cupsStartDestDocument(
-			cups::consts::http::CUPS_HTTP_DEFAULT,
-			dest,
-			info,
+			context.http,
+			context.destination,
+			context.info,
 			job_id,
 			filename.as_ptr(),
 			cups::consts::format::CUPS_FORMAT_AUTO,
-			options.num,
-			options.ptr,
+			context.options.num,
+			context.options.ptr,
 			cups::consts::bool::TRUE,
 		);
 		if fstatus != cups::http_status_e::HTTP_STATUS_CONTINUE {
@@ -143,7 +155,7 @@ unsafe fn initiate_file_transfer(
 }
 
 /// Opens the file at the specified path, and transfers its contents.
-fn transfer_file(path: &path::Path) {
+fn transfer_file(path: &path::Path, context: &JobContext) {
 	let mut file = fs::File::open(path).expect("Could not open file");
 	let mut buf = [0u8; 65536];
 
@@ -154,7 +166,7 @@ fn transfer_file(path: &path::Path) {
 		}
 		unsafe {
 			let status = cups::cupsWriteRequestData(
-				cups::consts::http::CUPS_HTTP_DEFAULT,
+				context.http,
 				buf.as_ptr() as *const ffi::c_char,
 				length,
 			);
@@ -169,10 +181,9 @@ fn transfer_file(path: &path::Path) {
 }
 
 /// Signals that the file transfer has finished.
-unsafe fn finish_file_transfer(dest: *mut cups::cups_dest_t, info: *mut cups::cups_dinfo_t) {
+fn finish_file_transfer(context: &JobContext) {
 	unsafe {
-		let status =
-			cups::cupsFinishDestDocument(cups::consts::http::CUPS_HTTP_DEFAULT, dest, info);
+		let status = cups::cupsFinishDestDocument(context.http, context.destination, context.info);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			let message = cups::cupsLastErrorString();
 			let message = ffi::CStr::from_ptr(message).to_string_lossy();
