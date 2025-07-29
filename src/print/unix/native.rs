@@ -18,6 +18,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			let dests = if num_dests > 0 {
 				slice::from_raw_parts(ptr_dests, num_dests as usize)
 			} else {
+				cups::cupsFreeDests(num_dests, ptr_dests);
 				return vec![];
 			};
 			let printers = dests.iter().map(|dest| map_dest_to_printer(dest)).collect();
