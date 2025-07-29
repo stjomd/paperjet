@@ -6,6 +6,9 @@ use std::{borrow, ffi, fs, path, ptr, slice};
 use crate::print::unix::cups;
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
+/// The size of the buffer that the file is read in chunks into.
+const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
+
 impl CrossPlatformApi for PlatformSpecificApi {
 	fn get_printers() -> Vec<Printer> {
 		unsafe {
@@ -133,7 +136,7 @@ fn create_job(title: &str, context: &JobContext) -> ffi::c_int {
 fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, context: &JobContext) {
 	let filename = ffi::CString::new(file_name.as_bytes()).expect("Could not create CString"); // FIXME
 	unsafe {
-		let fstatus = cups::cupsStartDestDocument(
+		let status = cups::cupsStartDestDocument(
 			context.http,
 			context.destination,
 			context.info,
@@ -144,7 +147,7 @@ fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, context: &
 			context.options.ptr,
 			cups::consts::bool::TRUE,
 		);
-		if fstatus != cups::http_status_e::HTTP_STATUS_CONTINUE {
+		if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
 			let message = cups::cupsLastErrorString();
 			eprintln!("Could not begin file transfer: {}", cstr_to_str(message));
 			panic!("fjdksjrkekem"); // FIXME
@@ -155,7 +158,7 @@ fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, context: &
 /// Opens the file at the specified path, and transfers its contents.
 fn transfer_file(path: &path::Path, context: &JobContext) {
 	let mut file = fs::File::open(path).expect("Could not open file");
-	let mut buf = [0u8; 65536];
+	let mut buf = [0u8; FILE_BUFFER_SIZE];
 
 	loop {
 		let length = file.read(&mut buf).expect("Could not read from file");
