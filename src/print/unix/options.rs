@@ -19,6 +19,8 @@ pub trait ToCupsOptionValue {
 impl ToCupsOptionValue for CopiesInt {
 	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
 		let string = self.0.to_string();
+		// SAFETY: `string` is built from `self.0`, which is a C integer, and thus contains only bytes
+		// which correspond to digit characters, and no 0 bytes.
 		let c_string = CString::new(string).expect("Could not convert copies to CString");
 		Cow::Owned(c_string)
 	}
@@ -34,6 +36,26 @@ impl ToCupsOptionValue for Finishing {
 			Finishing::Staple => opts::values::CUPS_FINISHINGS_STAPLE,
 			Finishing::Trim => opts::values::CUPS_FINISHINGS_TRIM,
 		})
+	}
+}
+impl ToCupsOptionValue for Vec<Finishing> {
+	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+		if self.is_empty() {
+			return Cow::Borrowed(opts::values::CUPS_FINISHINGS_NONE);
+		}
+		// We want a comma-separated string here:
+		let bytes = self
+			.iter()
+			.map(|finishing| finishing.to_cups_option_value())
+			.map(|cow| cow.into_owned().as_bytes().to_vec())
+			.collect::<Vec<Vec<u8>>>()
+			.join(b",".as_slice());
+
+		// SAFETY: `bytes` are constructed from valid C strings and the ',' byte,
+		// and thus do not contain 0 bytes.
+		let c_string = CString::new(bytes)
+			.expect("Could not convert comma-separated string of finishing options to CString");
+		Cow::Owned(c_string)
 	}
 }
 
@@ -87,6 +109,8 @@ impl ToCupsOptionValue for MediaType {
 impl ToCupsOptionValue for NumberUpInt {
 	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
 		let string = self.0.to_string();
+		// SAFETY: `string` is built from `self.0`, which is a C integer, and thus contains only bytes
+		// which correspond to digit characters, and no 0 bytes.
 		let c_string = CString::new(string).expect("Could not convert number up to CString");
 		Cow::Owned(c_string)
 	}
@@ -128,5 +152,96 @@ impl ToCupsOptionValue for SidesMode {
 			SidesMode::TwoSidedPortrait => opts::values::CUPS_SIDES_TWO_SIDED_PORTRAIT,
 			SidesMode::TwoSidedLandscape => opts::values::CUPS_SIDES_TWO_SIDED_LANDSCAPE,
 		})
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use std::ffi::CString;
+	use std::ops::Deref;
+
+	use crate::options::Finishing;
+	use crate::print::unix::cups::consts::opts;
+	use crate::print::unix::options::ToCupsOptionValue;
+
+	#[test]
+	fn if_empty_finishings_then_cups_finishings_none() {
+		// Finishings are empty:
+		let finishings: Vec<Finishing> = Vec::new();
+
+		// The CUPS option value should be CUPS_FINISHINGS_NONE:
+		let value = finishings.to_cups_option_value();
+
+		assert_eq!(
+			opts::values::CUPS_FINISHINGS_NONE,
+			value.deref(),
+			// message:
+			"Empty finishings should have value '{}', was: '{}'",
+			opts::values::CUPS_FINISHINGS_NONE
+				.to_str()
+				.expect("Can't convert CUPS const to String"),
+			value
+				.to_str()
+				.expect("Can't convert CUPS option value to String")
+		)
+	}
+
+	#[test]
+	fn if_one_finishing_then_cups_finishing_constant() {
+		// Only one finishing is present:
+		let finishings = vec![Finishing::Staple];
+
+		// The CUPS option value should be CUPS_FINISHINGS_STAPLE:
+		let value = finishings.to_cups_option_value();
+
+		assert_eq!(
+			opts::values::CUPS_FINISHINGS_STAPLE,
+			value.deref(),
+			// message:
+			"Finishings should have value '{}', was: '{}'",
+			opts::values::CUPS_FINISHINGS_STAPLE
+				.to_str()
+				.expect("Can't convert CUPS const to String"),
+			value
+				.to_str()
+				.expect("Can't convert CUPS option value to String")
+		)
+	}
+
+	#[test]
+	fn if_many_finishing_then_comma_separated_cups_finishing_constants() {
+		// Several finishing are present:
+		let finishings = vec![Finishing::Staple, Finishing::Bind, Finishing::Punch];
+
+		// The CUPS option value should be comma separated string of respective integer constants:
+		let value = finishings.to_cups_option_value();
+		let expected_str = format!(
+			"{},{},{}",
+			finishings[0]
+				.to_cups_option_value()
+				.to_str()
+				.expect("Can't convert CUPS const to String"),
+			finishings[1]
+				.to_cups_option_value()
+				.to_str()
+				.expect("Can't convert CUPS const to String"),
+			finishings[2]
+				.to_cups_option_value()
+				.to_str()
+				.expect("Can't convert CUPS const to String")
+		);
+		let expected_c_str =
+			CString::new(expected_str.clone()).expect("Can't convert expected string to CString");
+
+		assert_eq!(
+			expected_c_str.as_c_str(),
+			value.deref(),
+			// message:
+			"Finishings should have value '{}', was: '{}'",
+			expected_str,
+			value
+				.to_str()
+				.expect("Can't convert CUPS option value to String")
+		)
 	}
 }
