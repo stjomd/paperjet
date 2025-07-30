@@ -47,7 +47,7 @@ impl ToCupsOptionValue for Vec<Finishing> {
 		let bytes = self
 			.iter()
 			.map(|finishing| finishing.to_cups_option_value())
-			.map(|cow| cow.into_owned().as_bytes().to_vec())
+			.map(|cow| cow.to_bytes().to_vec())
 			.collect::<Vec<Vec<u8>>>()
 			.join(b",".as_slice());
 
