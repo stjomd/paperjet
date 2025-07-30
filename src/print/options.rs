@@ -93,3 +93,20 @@ pub enum SidesMode {
 	TwoSidedPortrait,
 	TwoSidedLandscape,
 }
+
+impl Default for PrintOptions {
+	fn default() -> Self {
+		Self {
+			copies: CopiesInt(1),
+			finishings: vec![],
+			media_size: MediaSize::A4,
+			media_source: MediaSource::Auto,
+			media_type: MediaType::Auto,
+			number_up: NumberUpInt(1),
+			orientation: Orientation::Portrait,
+			color_mode: ColorMode::Auto,
+			quality: Quality::Normal,
+			sides_mode: SidesMode::OneSided,
+		}
+	}
+}
