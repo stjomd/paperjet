@@ -9,12 +9,12 @@ pub use bindings::*;
 // These constants are macro-ed (#define)...
 pub mod consts {
 	use super::*;
-	use std::ffi::{c_char, c_int};
+	use std::ffi::{CStr, c_char, c_int};
 	use std::ptr::null_mut;
 
 	macro_rules! const_cstr {
 		($id:ident = $e:expr) => {
-			pub const $id: *const c_char = $e.as_ptr();
+			pub const $id: &CStr = $e;
 		};
 	}
 
@@ -48,7 +48,7 @@ pub mod consts {
 			const_cstr!(CUPS_FINISHINGS_BIND = c"7");
 			const_cstr!(CUPS_FINISHINGS_COVER = c"6");
 			const_cstr!(CUPS_FINISHINGS_FOLD = c"10");
-			const_cstr!(CUPS_FINISHINGS_NONE = c"3");
+			// const_cstr!(CUPS_FINISHINGS_NONE = c"3");
 			const_cstr!(CUPS_FINISHINGS_PUNCH = c"5");
 			const_cstr!(CUPS_FINISHINGS_STAPLE = c"4");
 			const_cstr!(CUPS_FINISHINGS_TRIM = c"11");
@@ -101,6 +101,7 @@ pub mod consts {
 
 	pub mod format {
 		use super::*;
-		const_cstr!(CUPS_FORMAT_AUTO = c"application/octet-stream");
+		// const_cstr!(CUPS_FORMAT_AUTO = c"application/octet-stream")
+		pub const CUPS_FORMAT_AUTO: *const c_char = c"application/octet-stream".as_ptr();
 	}
 }

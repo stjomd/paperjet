@@ -41,7 +41,7 @@ pub fn prepare_options_for_job(copies: u32) -> FatPointerMut<cups::cups_option_t
 	let copies = ffi::CString::new(copies).expect("Could not convert copies to CString"); // FIXME
 	num_options = unsafe {
 		cups::cupsAddOption(
-			cups::consts::opts::CUPS_COPIES,
+			cups::consts::opts::CUPS_COPIES.as_ptr(),
 			copies.as_ptr(),
 			num_options,
 			&mut ptr_options,

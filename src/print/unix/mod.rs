@@ -3,6 +3,7 @@ use std::{borrow, ffi};
 pub mod cups;
 pub mod jobs;
 pub mod native;
+pub mod options;
 
 /// Performs lossy conversion from a [`ffi::CStr`] into [`String`].
 /// The result is either a borrowed value or an owned value.
