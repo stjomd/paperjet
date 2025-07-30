@@ -9,7 +9,10 @@ use crate::print::unix::cups::consts::opts;
 
 // MARK: - Option values
 
+/// A trait that designates an option that can be converted to a CUPS option value string.
 pub trait ToCupsOptionValue {
+	/// Converts the option's value to a string accepted by CUPS.
+	/// Returns either a borrowed or an owned value inside a [`Cow`] pointer.
 	fn to_cups_option_value(&self) -> Cow<'static, CStr>;
 }
 

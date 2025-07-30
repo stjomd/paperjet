@@ -48,7 +48,7 @@ pub mod consts {
 			const_cstr!(CUPS_FINISHINGS_BIND = c"7");
 			const_cstr!(CUPS_FINISHINGS_COVER = c"6");
 			const_cstr!(CUPS_FINISHINGS_FOLD = c"10");
-			// const_cstr!(CUPS_FINISHINGS_NONE = c"3");
+			const_cstr!(CUPS_FINISHINGS_NONE = c"3");
 			const_cstr!(CUPS_FINISHINGS_PUNCH = c"5");
 			const_cstr!(CUPS_FINISHINGS_STAPLE = c"4");
 			const_cstr!(CUPS_FINISHINGS_TRIM = c"11");
