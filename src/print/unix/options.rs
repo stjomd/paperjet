@@ -62,21 +62,24 @@ impl ToCupsOptionValue for Vec<Finishing> {
 impl ToCupsOptionValue for MediaSize {
 	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
+			// ISO & A3+
 			MediaSize::A3 => opts::values::CUPS_MEDIA_A3,
 			MediaSize::A3Plus => opts::values::CUPS_MEDIA_SUPERBA3,
 			MediaSize::A4 => opts::values::CUPS_MEDIA_A4,
 			MediaSize::A5 => opts::values::CUPS_MEDIA_A5,
 			MediaSize::A6 => opts::values::CUPS_MEDIA_A6,
+			// US
+			MediaSize::GovtLetter => opts::values::CUPS_MEDIA_8X10,
+			MediaSize::Letter => opts::values::CUPS_MEDIA_LETTER,
+			MediaSize::Legal => opts::values::CUPS_MEDIA_LEGAL,
+			MediaSize::Tabloid => opts::values::CUPS_MEDIA_TABLOID,
+			// Miscellaneous
 			MediaSize::Index3x5 => opts::values::CUPS_MEDIA_3X5,
 			MediaSize::Index4x6 => opts::values::CUPS_MEDIA_4X6,
 			MediaSize::Index5x7 => opts::values::CUPS_MEDIA_5X7,
-			MediaSize::GovtLetter8x10 => opts::values::CUPS_MEDIA_8X10,
 			MediaSize::Envelope10 => opts::values::CUPS_MEDIA_ENV10,
 			MediaSize::EnvelopeDL => opts::values::CUPS_MEDIA_ENVDL,
-			MediaSize::Legal => opts::values::CUPS_MEDIA_LEGAL,
-			MediaSize::Letter => opts::values::CUPS_MEDIA_LETTER,
 			MediaSize::Photo3R => opts::values::CUPS_MEDIA_PHOTO_L,
-			MediaSize::Tabloid => opts::values::CUPS_MEDIA_TABLOID,
 		})
 	}
 }

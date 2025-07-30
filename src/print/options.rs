@@ -42,21 +42,24 @@ pub enum Finishing {
 
 #[derive(Debug)]
 pub enum MediaSize {
+	// ISO & A3+
 	A3,
 	A3Plus,
 	A4,
 	A5,
 	A6,
+	// US
+	GovtLetter,
+	Letter,
+	Legal,
+	Tabloid,
+	// Miscellaneous
 	Index3x5,
 	Index4x6,
 	Index5x7,
-	GovtLetter8x10,
 	Envelope10,
 	EnvelopeDL,
-	Legal,
-	Letter,
 	Photo3R,
-	Tabloid,
 }
 
 #[derive(Debug)]
