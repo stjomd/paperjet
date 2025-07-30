@@ -1,33 +1,36 @@
 use std::ffi::c_int;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct CopiesInt(pub c_int);
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct NumberUpInt(pub c_int);
 
+/// A struct that defines options for a print job.
+#[derive(Debug, Default)]
 pub struct PrintOptions {
 	/// Amount of copies.
-	pub copies: CopiesInt,
+	pub copies: Option<CopiesInt>,
 	/// Finishing processes such as stapling, folding, etc.
-	pub finishings: Vec<Finishing>,
+	pub finishings: Option<Vec<Finishing>>,
 	/// Media size.
-	pub media_size: MediaSize,
+	pub media_size: Option<MediaSize>,
 	/// The source where the media is pulled from.
-	pub media_source: MediaSource,
+	pub media_source: Option<MediaSource>,
 	/// Type of media, such as photo paper, matte paper, etc.
-	pub media_type: MediaType,
+	pub media_type: Option<MediaType>,
 	/// Number of document pages per media side.
-	pub number_up: NumberUpInt,
+	pub number_up: Option<NumberUpInt>,
 	/// Orientation of document pages on the media.
-	pub orientation: Orientation,
+	pub orientation: Option<Orientation>,
 	/// Color of the output.
-	pub color_mode: ColorMode,
+	pub color_mode: Option<ColorMode>,
 	/// Quality of output.
-	pub quality: Quality,
+	pub quality: Option<Quality>,
 	/// Determines single-sided or duplex printing.
-	pub sides_mode: SidesMode,
+	pub sides_mode: Option<SidesMode>,
 }
 
+#[derive(Debug)]
 pub enum Finishing {
 	Bind,
 	Cover,
@@ -36,6 +39,8 @@ pub enum Finishing {
 	Staple,
 	Trim,
 }
+
+#[derive(Debug)]
 pub enum MediaSize {
 	A3,
 	A3Plus,
@@ -54,11 +59,13 @@ pub enum MediaSize {
 	Tabloid,
 }
 
+#[derive(Debug)]
 pub enum MediaSource {
 	Auto,
 	Manual,
 }
 
+#[derive(Debug)]
 pub enum MediaType {
 	Auto,
 	Envelope,
@@ -71,42 +78,29 @@ pub enum MediaType {
 	Transparent,
 }
 
+#[derive(Debug)]
 pub enum Orientation {
 	Portrait,
 	Landscape,
 }
 
+#[derive(Debug)]
 pub enum ColorMode {
 	Auto,
 	Monochrome,
 	Color,
 }
 
+#[derive(Debug)]
 pub enum Quality {
 	Draft,
 	Normal,
 	High,
 }
 
+#[derive(Debug)]
 pub enum SidesMode {
 	OneSided,
 	TwoSidedPortrait,
 	TwoSidedLandscape,
-}
-
-impl Default for PrintOptions {
-	fn default() -> Self {
-		Self {
-			copies: CopiesInt(1),
-			finishings: vec![],
-			media_size: MediaSize::A4,
-			media_source: MediaSource::Auto,
-			media_type: MediaType::Auto,
-			number_up: NumberUpInt(1),
-			orientation: Orientation::Portrait,
-			color_mode: ColorMode::Auto,
-			quality: Quality::Normal,
-			sides_mode: SidesMode::OneSided,
-		}
-	}
 }
