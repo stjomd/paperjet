@@ -49,7 +49,7 @@ pub enum MediaSize {
 	A6,
 	Index3x5,
 	Index4x6,
-	Inches5x7,
+	Index5x7,
 	GovtLetter8x10,
 	Envelope10,
 	EnvelopeDL,

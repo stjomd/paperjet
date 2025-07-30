@@ -69,7 +69,7 @@ impl ToCupsOptionValue for MediaSize {
 			MediaSize::A6 => opts::values::CUPS_MEDIA_A6,
 			MediaSize::Index3x5 => opts::values::CUPS_MEDIA_3X5,
 			MediaSize::Index4x6 => opts::values::CUPS_MEDIA_4X6,
-			MediaSize::Inches5x7 => opts::values::CUPS_MEDIA_5X7,
+			MediaSize::Index5x7 => opts::values::CUPS_MEDIA_5X7,
 			MediaSize::GovtLetter8x10 => opts::values::CUPS_MEDIA_8X10,
 			MediaSize::Envelope10 => opts::values::CUPS_MEDIA_ENV10,
 			MediaSize::EnvelopeDL => opts::values::CUPS_MEDIA_ENVDL,
