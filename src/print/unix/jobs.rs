@@ -151,7 +151,7 @@ fn initiate_file_transfer(
 			context.info,
 			job_id,
 			filename.as_ptr(),
-			cups::consts::format::CUPS_FORMAT_AUTO,
+			cups::consts::format::CUPS_FORMAT_AUTO.as_ptr(),
 			context.options.num,
 			context.options.ptr,
 			cups::consts::bool(false), // we always pass `false` here & start printing with closeDestJob

@@ -99,7 +99,6 @@ pub mod consts {
 
 	pub mod format {
 		use super::*;
-		// const_cstr!(CUPS_FORMAT_AUTO = c"application/octet-stream")
-		pub const CUPS_FORMAT_AUTO: *const c_char = c"application/octet-stream".as_ptr();
+		const_cstr!(CUPS_FORMAT_AUTO = c"application/octet-stream");
 	}
 }
