@@ -1,7 +1,7 @@
 use crate::print::unix::{cstr_to_str, cups};
-use std::io::Read;
+use std::io::BufRead;
 use std::os::unix::ffi::OsStrExt;
-use std::{ffi, fs, path, ptr};
+use std::{ffi, fs, io, path, ptr};
 
 /// The size of the buffer that the file is read in chunks into.
 const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
@@ -105,19 +105,21 @@ pub fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, contex
 
 /// Opens the file at the specified path, and transfers its contents.
 pub fn transfer_file(path: &path::Path, context: &PrintContext) {
-	let mut file = fs::File::open(path).expect("Could not open file");
-	let mut buf = [0u8; FILE_BUFFER_SIZE];
+	let file = fs::File::open(path).expect("Could not open file");
+	let mut reader = io::BufReader::with_capacity(FILE_BUFFER_SIZE, file);
 
 	loop {
-		let length = file.read(&mut buf).expect("Could not read from file");
-		if length == 0 {
+		let buf = reader.fill_buf().expect("Could not read from file");
+		let buf_len = buf.len();
+
+		if buf_len == 0 {
 			break;
 		}
 		unsafe {
 			let status = cups::cupsWriteRequestData(
 				context.http,
 				buf.as_ptr() as *const ffi::c_char,
-				length,
+				buf_len,
 			);
 			if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
 				let message = cups::cupsLastErrorString();
@@ -125,6 +127,8 @@ pub fn transfer_file(path: &path::Path, context: &PrintContext) {
 				return;
 			}
 		}
+
+		reader.consume(buf_len);
 	}
 }
 
