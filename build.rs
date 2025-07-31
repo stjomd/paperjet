@@ -13,6 +13,7 @@ fn main() {
 
 const CUPS_ALLOWED_FUNCTIONS: &[&str] = &[
 	"cupsAddOption",
+	"cupsCancelDestJob",
 	"cupsCopyDestInfo",
 	"cupsCreateDestJob",
 	"cupsFinishDestDocument",

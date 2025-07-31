@@ -145,6 +145,14 @@ pub fn finish_file_transfer(context: &PrintContext) -> Result<(), PrintError> {
 	Ok(())
 }
 
+pub fn cancel_job(job_id: ffi::c_int, context: &PrintContext) -> Result<(), PrintError> {
+	let status = unsafe { cups::cupsCancelDestJob(context.http, context.destination, job_id) };
+	if status != cups::ipp_status_e::IPP_STATUS_OK {
+		return Err(get_last_error());
+	}
+	Ok(())
+}
+
 /// Retrieves the last error string from CUPS and constructs a [`PrintError::Backend`].
 /// If no error string is returned by CUPS, an empty error string is used.
 fn get_last_error() -> PrintError {

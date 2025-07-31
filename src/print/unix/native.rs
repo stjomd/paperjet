@@ -43,10 +43,21 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		let job_id = jobs::create_job("printrs", &context)?;
 
 		// Transfer file
-		let file_name = path.file_name().expect("Could not extract file name"); // FIXME
-		jobs::initiate_file_transfer(job_id, file_name, &context);
-		jobs::transfer_file(path, &context);
-		jobs::finish_file_transfer(&context);
+		let file_name = path
+			.file_name()
+			.ok_or_else(|| PrintError::InvalidPath(path.to_owned()))?;
+		let transfer_result: Result<(), PrintError> = {
+			jobs::initiate_file_transfer(job_id, file_name, &context)?;
+			jobs::transfer_file(path, &context)?;
+			jobs::finish_file_transfer(&context)?;
+			Ok(())
+		};
+		if transfer_result.is_err() {
+			// If we can't even cancel, give up
+			let _ = jobs::cancel_job(job_id, &context);
+			// Let the caller know what the causing problem was
+			transfer_result?
+		}
 
 		// FIXME: Free memory FIXME (choose dest differently?)
 		unsafe {
