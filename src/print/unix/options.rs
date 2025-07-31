@@ -1,11 +1,24 @@
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 
-use crate::options::{
-	ColorMode, CopiesInt, Finishing, MediaSize, MediaSource, MediaType, NumberUpInt, Orientation,
-	Quality, SidesMode,
-};
+use crate::options::*;
+use crate::print::unix::cups;
 use crate::print::unix::cups::consts::opts;
+use crate::print::unix::job::FatPointerMut;
+
+// MARK: - Cups Options Struct
+
+/// A struct representing an array of options allocated by CUPS.
+pub struct CupsOptions {
+	/// A fat pointer to the array of options.
+	opts: FatPointerMut<cups::cups_option_t>,
+}
+impl Drop for CupsOptions {
+	fn drop(&mut self) {
+		// SAFETY: TODO
+		unsafe { cups::cupsFreeOptions(self.opts.num, self.opts.ptr) };
+	}
+}
 
 // MARK: - Option values
 

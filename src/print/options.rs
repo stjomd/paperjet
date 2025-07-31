@@ -1,12 +1,12 @@
 use std::ffi::c_int;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct CopiesInt(pub c_int);
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct NumberUpInt(pub c_int);
 
 /// A struct that defines options for a print job.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct PrintOptions {
 	/// Amount of copies.
 	pub copies: Option<CopiesInt>,
@@ -30,7 +30,7 @@ pub struct PrintOptions {
 	pub sides_mode: Option<SidesMode>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum Finishing {
 	Bind,
 	Cover,
@@ -40,7 +40,7 @@ pub enum Finishing {
 	Trim,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum MediaSize {
 	// ISO & A3+
 	A3,
@@ -62,13 +62,13 @@ pub enum MediaSize {
 	Photo3R,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum MediaSource {
 	Auto,
 	Manual,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum MediaType {
 	Auto,
 	Envelope,
@@ -81,27 +81,27 @@ pub enum MediaType {
 	Transparent,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum Orientation {
 	Portrait,
 	Landscape,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum ColorMode {
 	Auto,
 	Monochrome,
 	Color,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum Quality {
 	Draft,
 	Normal,
 	High,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, clap::ValueEnum)]
 pub enum SidesMode {
 	OneSided,
 	TwoSidedPortrait,
