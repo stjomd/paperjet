@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::{path, ptr, slice};
 
 use crate::error::PrintError;
+use crate::print::unix::jobs::CupsJob;
 use crate::print::unix::{cstr_to_string, cups, jobs};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
@@ -26,7 +27,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 
 	fn print_file(path: &path::Path) -> Result<(), PrintError> {
 		let mut ptr_dests = ptr::null_mut();
-		let num_dests = unsafe { cups::cupsGetDests(&mut ptr_dests) };
+		let _ = unsafe { cups::cupsGetDests(&mut ptr_dests) };
 		let chosen_dest = ptr_dests; // first FIXME
 
 		// TODO: initializer for JobContext => guarantee JobContext is always safe
@@ -40,29 +41,12 @@ impl CrossPlatformApi for PlatformSpecificApi {
 				cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest)
 			},
 		};
-		let job_id = jobs::create_job("printrs", &context)?;
+		// TODO: CupsJob contains destination (cups_dest_t). Be careful not to free ptr_dests before
+		// dropping CupsJob - or cancelling the job won't work.
 
-		// Transfer file
-		let file_name = path
-			.file_name()
-			.ok_or_else(|| PrintError::InvalidPath(path.to_owned()))?;
-		let transfer_result: Result<(), PrintError> = {
-			jobs::initiate_file_transfer(job_id, file_name, &context)?;
-			jobs::transfer_file(path, &context)?;
-			jobs::finish_file_transfer(&context)?;
-			Ok(())
-		};
-		if transfer_result.is_err() {
-			// If we can't even cancel, give up
-			let _ = jobs::cancel_job(job_id, &context);
-			// Let the caller know what the causing problem was
-			transfer_result?
-		}
-
-		// FIXME: Free memory FIXME (choose dest differently?)
-		unsafe {
-			cups::cupsFreeDests(num_dests, ptr_dests);
-		}
+		let job = CupsJob::try_new("printrs", context)?;
+		job.add_documents([path])?;
+		job.print()?;
 		Ok(())
 	}
 }

@@ -18,10 +18,8 @@ pub mod consts {
 		};
 	}
 
-	pub mod bool {
-		use super::*;
-		pub const TRUE: c_int = 1;
-		// pub const FALSE: c_int = 0;
+	pub fn bool(value: bool) -> c_int {
+		if value { 1 } else { 0 }
 	}
 
 	pub mod http {
