@@ -1,7 +1,7 @@
 use std::{borrow, ffi};
 
 pub mod cups;
-pub mod jobs;
+pub mod job;
 pub mod native;
 pub mod options;
 

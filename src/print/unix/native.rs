@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::{path, ptr, slice};
 
 use crate::error::PrintError;
-use crate::print::unix::jobs::CupsJob;
-use crate::print::unix::{cstr_to_string, cups, jobs};
+use crate::print::unix::job::CupsJob;
+use crate::print::unix::{cstr_to_string, cups, job};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
 impl CrossPlatformApi for PlatformSpecificApi {
@@ -33,9 +33,9 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		// TODO: initializer for JobContext => guarantee JobContext is always safe
 		// TODO: (i.e. pointers inside are valid) => no need to declare functions that take
 		// TODO: &context as unsafe. Atm fns are marked safe but aren't
-		let context = jobs::PrintContext {
+		let context = job::PrintContext {
 			http: cups::consts::http::CUPS_HTTP_DEFAULT,
-			options: jobs::prepare_options_for_job(1)?,
+			options: job::prepare_options_for_job(1)?,
 			destination: chosen_dest,
 			info: unsafe {
 				cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest)

@@ -9,7 +9,7 @@ pub use bindings::*;
 // These constants are macro-ed (#define)...
 pub mod consts {
 	use super::*;
-	use std::ffi::{CStr, c_char, c_int};
+	use std::ffi::{CStr, c_int};
 	use std::ptr::null_mut;
 
 	macro_rules! const_cstr {
