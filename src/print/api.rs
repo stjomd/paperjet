@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::path;
 
+use crate::error::PrintError;
+
 // MARK: - Public API Methods
 
 /// Returns a vector of available printers.
@@ -10,7 +12,7 @@ pub fn get_printers() -> Vec<Printer> {
 }
 
 /// Prints a specified file.
-pub fn print_file(path: path::PathBuf) {
+pub fn print_file(path: path::PathBuf) -> Result<(), PrintError> {
 	PlatformSpecificApi::print_file(&path)
 }
 
@@ -25,13 +27,12 @@ pub trait CrossPlatformApi {
 	/// See [`crate::print::get_printers()`].
 	fn get_printers() -> Vec<Printer>;
 	/// See [`crate::print::print_file()`].
-	fn print_file(path: &path::Path);
+	fn print_file(path: &path::Path) -> Result<(), PrintError>;
 }
 
 // MARK: - Structs
 
 /// A struct representing a printer.
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Printer {
 	pub name: String,

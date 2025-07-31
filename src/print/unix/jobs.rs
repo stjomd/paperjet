@@ -1,4 +1,5 @@
-use crate::print::unix::{cstr_to_str, cups};
+use crate::error::PrintError;
+use crate::print::unix::{cstr_to_string, cups};
 use std::io::BufRead;
 use std::os::unix::ffi::OsStrExt;
 use std::{ffi, fs, io, path, ptr};
@@ -33,12 +34,14 @@ pub struct FatPointerMut<T> {
 
 /// Configures options for the print job.
 /// Returns a pointer to the options array.
-pub fn prepare_options_for_job(copies: u32) -> FatPointerMut<cups::cups_option_t> {
+pub fn prepare_options_for_job(
+	copies: u32,
+) -> Result<FatPointerMut<cups::cups_option_t>, PrintError> {
 	let mut ptr_options = ptr::null_mut();
 	let mut num_options = 0;
 
 	let copies = copies.to_string();
-	let copies = ffi::CString::new(copies).expect("Could not convert copies to CString"); // FIXME
+	let copies = ffi::CString::new(copies)?;
 	num_options = unsafe {
 		cups::cupsAddOption(
 			cups::consts::opts::CUPS_COPIES.as_ptr(),
@@ -48,15 +51,15 @@ pub fn prepare_options_for_job(copies: u32) -> FatPointerMut<cups::cups_option_t
 		)
 	};
 
-	FatPointerMut {
+	Ok(FatPointerMut {
 		num: num_options,
 		ptr: ptr_options,
-	}
+	})
 }
 
 /// Creates a print job.
-pub fn create_job(title: &str, context: &PrintContext) -> ffi::c_int {
-	let title = ffi::CString::new(title).expect("Could not convert title to CString");
+pub fn create_job(title: &str, context: &PrintContext) -> Result<ffi::c_int, PrintError> {
+	let title = ffi::CString::new(title)?;
 	let mut job_id = 0;
 
 	unsafe {
@@ -70,19 +73,20 @@ pub fn create_job(title: &str, context: &PrintContext) -> ffi::c_int {
 			context.options.ptr,
 		);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
-			let message = cups::cupsLastErrorString();
-			eprintln!("Could not create print job: {}", cstr_to_str(message));
-			panic!("djksl"); // FIXME
+			return Err(get_last_error());
 		}
 	}
 
-	eprintln!("Created job: {job_id}");
-	job_id
+	Ok(job_id)
 }
 
 /// Signals to initiate a file transfer to a specified print job.
-pub fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, context: &PrintContext) {
-	let filename = ffi::CString::new(file_name.as_bytes()).expect("Could not create CString"); // FIXME
+pub fn initiate_file_transfer(
+	job_id: ffi::c_int,
+	file_name: &ffi::OsStr,
+	context: &PrintContext,
+) -> Result<(), PrintError> {
+	let filename = ffi::CString::new(file_name.as_bytes())?;
 	unsafe {
 		let status = cups::cupsStartDestDocument(
 			context.http,
@@ -96,20 +100,19 @@ pub fn initiate_file_transfer(job_id: ffi::c_int, file_name: &ffi::OsStr, contex
 			cups::consts::bool::TRUE,
 		);
 		if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
-			let message = cups::cupsLastErrorString();
-			eprintln!("Could not begin file transfer: {}", cstr_to_str(message));
-			panic!("fjdksjrkekem"); // FIXME
+			return Err(get_last_error());
 		}
 	}
+	Ok(())
 }
 
 /// Opens the file at the specified path, and transfers its contents.
-pub fn transfer_file(path: &path::Path, context: &PrintContext) {
-	let file = fs::File::open(path).expect("Could not open file");
+pub fn transfer_file(path: &path::Path, context: &PrintContext) -> Result<(), PrintError> {
+	let file = fs::File::open(path)?;
 	let mut reader = io::BufReader::with_capacity(FILE_BUFFER_SIZE, file);
 
 	loop {
-		let buf = reader.fill_buf().expect("Could not read from file");
+		let buf = reader.fill_buf()?;
 		let buf_len = buf.len();
 
 		if buf_len == 0 {
@@ -122,25 +125,36 @@ pub fn transfer_file(path: &path::Path, context: &PrintContext) {
 				buf_len,
 			);
 			if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
-				let message = cups::cupsLastErrorString();
-				eprintln!("Could not transfer file bytes: {}", cstr_to_str(message));
-				return;
+				return Err(get_last_error());
 			}
 		}
-
 		reader.consume(buf_len);
 	}
+
+	Ok(())
 }
 
 /// Signals that the file transfer has finished.
-pub fn finish_file_transfer(context: &PrintContext) {
+pub fn finish_file_transfer(context: &PrintContext) -> Result<(), PrintError> {
 	unsafe {
 		let status = cups::cupsFinishDestDocument(context.http, context.destination, context.info);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
-			let message = cups::cupsLastErrorString();
-			eprintln!("Could not finish file transfer: {}", cstr_to_str(message));
-			panic!("mkqkiswjui"); // FIXMEs
+			return Err(get_last_error());
 		}
 	}
-	eprintln!("File transfer finished!");
+	Ok(())
+}
+
+/// Retrieves the last error string from CUPS and constructs a [`PrintError::Backend`].
+/// If no error string is returned by CUPS, an empty error string is used.
+fn get_last_error() -> PrintError {
+	let message = unsafe {
+		let ptr = cups::cupsLastErrorString();
+		if !ptr.is_null() {
+			cstr_to_string(ptr)
+		} else {
+			String::from("")
+		}
+	};
+	PrintError::Backend(message)
 }

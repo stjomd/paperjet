@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::{path, ptr, slice};
 
+use crate::error::PrintError;
 use crate::print::unix::{cstr_to_string, cups, jobs};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
@@ -23,7 +24,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		}
 	}
 
-	fn print_file(path: &path::Path) {
+	fn print_file(path: &path::Path) -> Result<(), PrintError> {
 		let mut ptr_dests = ptr::null_mut();
 		let num_dests = unsafe { cups::cupsGetDests(&mut ptr_dests) };
 		let chosen_dest = ptr_dests; // first FIXME
@@ -33,13 +34,13 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		// TODO: &context as unsafe. Atm fns are marked safe but aren't
 		let context = jobs::PrintContext {
 			http: cups::consts::http::CUPS_HTTP_DEFAULT,
-			options: jobs::prepare_options_for_job(1),
+			options: jobs::prepare_options_for_job(1)?,
 			destination: chosen_dest,
 			info: unsafe {
 				cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest)
 			},
 		};
-		let job_id = jobs::create_job("printrs", &context);
+		let job_id = jobs::create_job("printrs", &context)?;
 
 		// Transfer file
 		let file_name = path.file_name().expect("Could not extract file name"); // FIXME
@@ -51,6 +52,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		unsafe {
 			cups::cupsFreeDests(num_dests, ptr_dests);
 		}
+		Ok(())
 	}
 }
 

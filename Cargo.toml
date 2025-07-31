@@ -15,6 +15,7 @@ path = "src/main.rs"
 [dependencies]
 clap = { version = "4.5.41", features = ["color", "derive"] }
 colored = "3.0.0"
+thiserror = "2.0.12"
 
 [dev-dependencies]
 uuid = { version = "1.17.0", features = ["v4"] }
