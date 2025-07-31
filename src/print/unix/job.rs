@@ -28,8 +28,8 @@ impl Drop for PrintContext {
 /// A mutable pointer along with a size (useful for dynamic arrays).
 #[derive(Clone, Copy)]
 pub struct FatPointerMut<T> {
-	num: ffi::c_int,
-	ptr: *mut T,
+	pub num: ffi::c_int,
+	pub ptr: *mut T,
 }
 
 /// Configures options for the print job.

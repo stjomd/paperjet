@@ -2,6 +2,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum PrintError {
+	/// An error that indicates that there are no printers to work with.
+	#[error("no printers available")]
+	NoPrinters,
+
 	/// An error that indicates that a file name could not be extracted from a path.
 	#[error("invalid path to file: {0}")]
 	InvalidPath(std::path::PathBuf),
