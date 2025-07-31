@@ -1,7 +1,9 @@
-use std::{ptr, slice};
+use std::ptr;
 
-use crate::print::unix::cups;
 use crate::print::unix::job::FatPointerMut;
+use crate::print::unix::{cups, fat_ptr_to_slice, fat_ptr_to_slice_mut};
+
+// MARK: - Destinations Array
 
 /// A struct representing an array of CUPS destinations.
 pub struct CupsDestinations {
@@ -25,21 +27,13 @@ impl CupsDestinations {
 	}
 	/// Returns an immutable view into the CUPS destinations as a slice.
 	pub fn as_slice(&self) -> &[cups::cups_dest_t] {
-		if self.dests.num > 0 {
-			// SAFETY: `self.dests` contains a valid pointer & size created in the `Self::new` function.
-			unsafe { slice::from_raw_parts(self.dests.ptr, self.dests.num as usize) }
-		} else {
-			&mut []
-		}
+		// SAFETY: `self.dests` contains a valid pointer & size from CUPS obtained in `Self::new`.
+		unsafe { fat_ptr_to_slice(&self.dests) }
 	}
 	/// Returns a mutable view into the CUPS destinations as a slice.
 	fn as_slice_mut(&mut self) -> &mut [cups::cups_dest_t] {
-		if self.dests.num > 0 {
-			// SAFETY: `self.dests` contains a valid pointer & size created in the `Self::new` function.
-			unsafe { slice::from_raw_parts_mut(self.dests.ptr, self.dests.num as usize) }
-		} else {
-			&mut []
-		}
+		// SAFETY: `self.dests` contains a valid pointer & size from CUPS obtained in `Self::new`.
+		unsafe { fat_ptr_to_slice_mut(&self.dests) }
 	}
 	/// Returns a destination at the specified index, or [`None`] if the index is invalid.
 	pub fn get_mut(&mut self, index: usize) -> Option<&mut cups::cups_dest_t> {
@@ -49,7 +43,9 @@ impl CupsDestinations {
 
 impl Drop for CupsDestinations {
 	fn drop(&mut self) {
-		// SAFETY: `self.dests` contains a valid pointer & size created in the `Self::new` function.
+		// SAFETY: `self.dests` contains a valid pointer & size from CUPS obtained in `Self::new`.
 		unsafe { cups::cupsFreeDests(self.dests.num, self.dests.ptr) };
+		// Seems like we don't have to drop the options on each destination ourselves (causes
+		// occasional double frees), and they're dropped by CUPS along with this call.
 	}
 }
