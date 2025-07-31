@@ -12,8 +12,8 @@ pub fn get_printers() -> Vec<Printer> {
 }
 
 /// Prints a specified file.
-pub fn print_file(path: path::PathBuf) -> Result<(), PrintError> {
-	PlatformSpecificApi::print_file(&path)
+pub fn print_files(paths: &[path::PathBuf]) -> Result<(), PrintError> {
+	PlatformSpecificApi::print_files(paths)
 }
 
 // MARK: - Public API trait
@@ -26,8 +26,8 @@ pub struct PlatformSpecificApi;
 pub trait CrossPlatformApi {
 	/// See [`crate::print::get_printers()`].
 	fn get_printers() -> Vec<Printer>;
-	/// See [`crate::print::print_file()`].
-	fn print_file(path: &path::Path) -> Result<(), PrintError>;
+	/// See [`crate::print::print_files()`].
+	fn print_files(paths: &[path::PathBuf]) -> Result<(), PrintError>;
 }
 
 // MARK: - Structs

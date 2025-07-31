@@ -16,7 +16,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			.collect()
 	}
 
-	fn print_file(path: &path::Path) -> Result<(), PrintError> {
+	fn print_files(paths: &[path::PathBuf]) -> Result<(), PrintError> {
 		let mut dests = CupsDestinations::new();
 		let chosen_dest = dests.get_mut(0).ok_or(PrintError::NoPrinters)?;
 
@@ -30,7 +30,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		};
 
 		let job = CupsJob::try_new("printrs", context)?;
-		job.add_documents([path])?;
+		job.add_documents(paths)?;
 		job.print()?;
 		Ok(())
 	}

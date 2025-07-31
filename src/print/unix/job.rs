@@ -81,7 +81,7 @@ impl CupsJob {
 	/// Adds documents, specified by their paths, to this job.
 	pub fn add_documents<'a, I>(&self, docs: I) -> Result<(), PrintError>
 	where
-		I: IntoIterator<Item = &'a path::Path>,
+		I: IntoIterator<Item = &'a path::PathBuf>,
 	{
 		for doc in docs {
 			self.add_document(doc)?;

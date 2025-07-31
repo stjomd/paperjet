@@ -33,8 +33,8 @@ pub struct DisplayArgs {
 
 #[derive(clap::Args)]
 pub struct PrintArgs {
-	/// The path to the file.
-	pub input: path::PathBuf,
+	/// A list of paths to the files to be printed.
+	pub files: Vec<path::PathBuf>,
 }
 
 impl Args {
