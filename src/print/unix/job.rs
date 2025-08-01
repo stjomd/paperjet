@@ -17,6 +17,19 @@ pub struct PrintContext {
 	pub destination: *mut cups::cups_dest_t,
 	pub info: CupsDestinationInfo,
 }
+impl PrintContext {
+	pub fn new(destination: &mut cups::cups_dest_t) -> Self {
+		let http = cups::consts::http::CUPS_HTTP_DEFAULT;
+		let options = CupsOptions::new();
+		let info = CupsDestinationInfo::new(destination);
+		Self {
+			http,
+			options,
+			destination,
+			info,
+		}
+	}
+}
 
 /// A struct that represents a CUPS job.
 pub struct CupsJob {
