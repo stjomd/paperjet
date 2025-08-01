@@ -1,10 +1,9 @@
 use crate::error::PrintError;
 use crate::print::unix::{cstr_to_string, cups};
 use std::io::BufRead;
-use std::os::unix::ffi::OsStrExt;
-use std::{ffi, fs, io, path, ptr};
+use std::{ffi, io, ptr};
 
-/// The size of the buffer that the file is read in chunks into.
+/// The size of the buffer that is used for transfer to CUPS.
 const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
 
 /// Stores information related to a print job.
@@ -57,13 +56,16 @@ pub fn prepare_options_for_job(
 	})
 }
 
-#[allow(dead_code)]
 /// A struct that represents a CUPS job.
 pub struct CupsJob {
 	/// The job ID, assigned by CUPS.
 	id: ffi::c_int,
+	/// Title of the job.
+	title: String,
 	/// The context of the print job.
 	context: PrintContext,
+	/// The amount of submitted documents.
+	amount_documents: usize,
 	/// Flag indicating whether the job should be cancelled when the value is dropped.
 	cancel_on_drop: bool,
 }
@@ -74,28 +76,40 @@ impl CupsJob {
 		let job_id = create_job(title, &context)?;
 		Ok(Self {
 			id: job_id,
+			title: title.to_owned(),
 			context,
+			amount_documents: 0,
 			cancel_on_drop: true,
 		})
 	}
-	/// Adds documents, specified by their paths, to this job.
-	pub fn add_documents<'a, I>(&self, docs: I) -> Result<(), PrintError>
+	/// Adds the contents of each of [`readers`]` as a document to this job.
+	/// Once printing is started by calling [`Self::print()`], all of the added documents
+	/// are printed in the course of this job.
+	pub fn add_documents<I, R>(&mut self, readers: I) -> Result<(), PrintError>
 	where
-		I: IntoIterator<Item = &'a path::PathBuf>,
+		I: IntoIterator<Item = R>,
+		R: std::io::Read,
 	{
-		for doc in docs {
-			self.add_document(doc)?;
+		for reader in readers {
+			self.add_document(reader)?;
 		}
 		Ok(())
 	}
-	/// Adds a document with the specified path to this job.
-	fn add_document(&self, path: &path::Path) -> Result<(), PrintError> {
-		let file_name = path
-			.file_name()
-			.ok_or_else(|| PrintError::InvalidPath(path.to_owned()))?;
-		initiate_file_transfer(self.id, file_name, &self.context)?;
-		transfer_file(path, &self.context)?;
-		finish_file_transfer(&self.context)?;
+	/// Adds the contents of [`reader`] as a document to this job.
+	/// This function can be called many times in order to add more documents, or, alternatively,
+	/// the function [`Self::add_documents()`] can be used.
+	///
+	/// Once printing is started by calling [`Self::print()`], all of the added documents
+	/// are printed in the course of this job.
+	pub fn add_document<R>(&mut self, reader: R) -> Result<(), PrintError>
+	where
+		R: std::io::Read,
+	{
+		let file_name = format!("{}-{}", self.title, self.amount_documents + 1);
+		start_upload(self.id, &file_name, &self.context)?;
+		upload(reader, &self.context)?;
+		finish_upload(&self.context)?;
+		self.amount_documents += 1;
 		Ok(())
 	}
 	/// Closes this job and starts printing.
@@ -138,9 +152,9 @@ fn create_job(title: &str, context: &PrintContext) -> Result<ffi::c_int, PrintEr
 }
 
 /// Signals to initiate a file transfer to a specified print job.
-fn initiate_file_transfer(
+fn start_upload(
 	job_id: ffi::c_int,
-	file_name: &ffi::OsStr,
+	file_name: &str,
 	context: &PrintContext,
 ) -> Result<(), PrintError> {
 	let filename = ffi::CString::new(file_name.as_bytes())?;
@@ -163,10 +177,14 @@ fn initiate_file_transfer(
 	Ok(())
 }
 
-/// Opens the file at the specified path, and transfers its contents.
-fn transfer_file(path: &path::Path, context: &PrintContext) -> Result<(), PrintError> {
-	let file = fs::File::open(path)?;
-	let mut reader = io::BufReader::with_capacity(FILE_BUFFER_SIZE, file);
+/// Reads the contents from a specified reader, and transfers them to CUPS.
+/// This function wraps the provided [`reader`] in a [`std::io::BufReader`],
+/// thus there is no need to do this at the call site.
+fn upload<R>(reader: R, context: &PrintContext) -> Result<(), PrintError>
+where
+	R: io::Read,
+{
+	let mut reader = io::BufReader::with_capacity(FILE_BUFFER_SIZE, reader);
 
 	loop {
 		let buf = reader.fill_buf()?;
@@ -192,7 +210,7 @@ fn transfer_file(path: &path::Path, context: &PrintContext) -> Result<(), PrintE
 }
 
 /// Signals that the file transfer has finished.
-fn finish_file_transfer(context: &PrintContext) -> Result<(), PrintError> {
+fn finish_upload(context: &PrintContext) -> Result<(), PrintError> {
 	unsafe {
 		let status = cups::cupsFinishDestDocument(context.http, context.destination, context.info);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {

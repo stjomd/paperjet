@@ -6,10 +6,6 @@ pub enum PrintError {
 	#[error("no printers available")]
 	NoPrinters,
 
-	/// An error that indicates that a file name could not be extracted from a path.
-	#[error("invalid path to file: {0}")]
-	InvalidPath(std::path::PathBuf),
-
 	/// An error during conversion to a C string (due to present null bytes).
 	#[error("could not convert to C string: {0}")]
 	StringConversion(#[from] std::ffi::NulError),

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path;
+use std::io;
 
 use crate::error::PrintError;
 
@@ -11,9 +11,13 @@ pub fn get_printers() -> Vec<Printer> {
 	PlatformSpecificApi::get_printers()
 }
 
-/// Prints a specified file.
-pub fn print_files(paths: &[path::PathBuf]) -> Result<(), PrintError> {
-	PlatformSpecificApi::print_files(paths)
+/// Prints the contents of each of the specified [`readers`].
+pub fn print<I, R>(readers: I) -> Result<(), PrintError>
+where
+	I: IntoIterator<Item = R>,
+	R: io::Read,
+{
+	PlatformSpecificApi::print(readers)
 }
 
 // MARK: - Public API trait
@@ -26,8 +30,11 @@ pub struct PlatformSpecificApi;
 pub trait CrossPlatformApi {
 	/// See [`crate::print::get_printers()`].
 	fn get_printers() -> Vec<Printer>;
-	/// See [`crate::print::print_files()`].
-	fn print_files(paths: &[path::PathBuf]) -> Result<(), PrintError>;
+	/// See [`crate::print::print()`].
+	fn print<I, R>(readers: I) -> Result<(), PrintError>
+	where
+		I: IntoIterator<Item = R>,
+		R: io::Read;
 }
 
 // MARK: - Structs

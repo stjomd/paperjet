@@ -1,11 +1,16 @@
+use std::fs::File;
+
+use printrs::error::PrintError;
+
 use crate::cli::args::PrintArgs;
-use printrs::print_files;
 
 /// The `print` command
-pub fn print(args: PrintArgs) {
-	let result = print_files(&args.files);
-	match result {
-		Ok(_) => println!("File has been submitted for printing."),
-		Err(e) => eprintln!("{e}"),
-	}
+pub fn print(args: PrintArgs) -> Result<(), PrintError> {
+	let files: Vec<File> = args
+		.paths
+		.iter()
+		.map(File::open)
+		.collect::<Result<_, _>>()?;
+
+	printrs::print(files).inspect(|_| println!("Files have been submitted for printing."))
 }

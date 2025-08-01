@@ -1,4 +1,4 @@
-use clap::{ArgAction, ArgGroup, Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 use printrs::options::{
 	ColorMode, Finishing, MediaSize, MediaSource, MediaType, Orientation, Quality, SidesMode,
 };
@@ -41,12 +41,12 @@ pub struct DisplayArgs {
 
 #[derive(Debug, clap::Args)]
 pub struct PrintArgs {
-	/// A list of paths to the files to be printed.
+	/// Paths to the files to be printed.
 	///
 	/// File extensions, types, or contents are not validated.
 	/// Support will be determined by the device's driver.
-	#[arg(required = true, num_args = 1..)]
-	pub files: Vec<path::PathBuf>,
+	#[arg(value_name = "files", required = true, num_args = 1..)]
+	pub paths: Vec<path::PathBuf>,
 
 	/// Amount of copies [default: 1]
 	///
@@ -95,9 +95,4 @@ impl Args {
 	pub fn parse() -> Self {
 		<Self as Parser>::parse()
 	}
-}
-
-mod headings {
-	pub const PRINTER: &str = "Printer";
-	pub const MISC: &str = "Miscellaneous";
 }

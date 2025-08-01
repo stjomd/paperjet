@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::{path, slice};
+use std::slice;
 
 use crate::error::PrintError;
 use crate::print::unix::dest::CupsDestinations;
@@ -15,8 +15,11 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			.map(map_dest_to_printer)
 			.collect()
 	}
-
-	fn print_files(paths: &[path::PathBuf]) -> Result<(), PrintError> {
+	fn print<I, R>(readers: I) -> Result<(), PrintError>
+	where
+		I: IntoIterator<Item = R>,
+		R: std::io::Read,
+	{
 		let mut dests = CupsDestinations::new();
 		let chosen_dest = dests.get_mut(0).ok_or(PrintError::NoPrinters)?;
 
@@ -29,8 +32,8 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			},
 		};
 
-		let job = CupsJob::try_new("printrs", context)?;
-		job.add_documents(paths)?;
+		let mut job = CupsJob::try_new("printrs", context)?;
+		job.add_documents(readers)?;
 		job.print()?;
 		Ok(())
 	}
