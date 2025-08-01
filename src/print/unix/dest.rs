@@ -1,6 +1,6 @@
 use std::ptr;
 
-use crate::print::unix::job::FatPointerMut;
+use crate::print::unix::FatPointerMut;
 use crate::print::unix::{cups, fat_ptr_to_slice, fat_ptr_to_slice_mut};
 
 // MARK: - Destinations Array

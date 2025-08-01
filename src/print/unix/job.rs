@@ -1,5 +1,5 @@
 use crate::error::PrintError;
-use crate::print::unix::{cstr_to_string, cups};
+use crate::print::unix::{FatPointerMut, cstr_to_string, cups};
 use std::io::BufRead;
 use std::{ffi, io, ptr};
 
@@ -22,13 +22,6 @@ impl Drop for PrintContext {
 			cups::cupsFreeOptions(self.options.num, self.options.ptr);
 		}
 	}
-}
-
-/// A mutable pointer along with a size (useful for dynamic arrays).
-#[derive(Clone, Copy)]
-pub struct FatPointerMut<T> {
-	pub num: ffi::c_int,
-	pub ptr: *mut T,
 }
 
 /// Configures options for the print job.

@@ -2,9 +2,9 @@ use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 
 use crate::options::*;
+use crate::print::unix::FatPointerMut;
 use crate::print::unix::cups;
 use crate::print::unix::cups::consts::opts;
-use crate::print::unix::job::FatPointerMut;
 
 // MARK: - Cups Options Struct
 

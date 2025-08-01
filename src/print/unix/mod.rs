@@ -1,12 +1,17 @@
 use std::{borrow, ffi};
 
-use crate::print::unix::job::FatPointerMut;
-
 pub mod cups;
 pub mod dest;
 pub mod job;
 pub mod native;
 pub mod options;
+
+/// A mutable pointer along with a size (useful for dynamic arrays).
+#[derive(Clone, Copy)]
+pub struct FatPointerMut<T> {
+	pub num: ffi::c_int,
+	pub ptr: *mut T,
+}
 
 /// Performs lossy conversion from a [`ffi::CStr`] into [`String`].
 /// The result is either a borrowed value or an owned value.
