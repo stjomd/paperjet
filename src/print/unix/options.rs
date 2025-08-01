@@ -47,7 +47,7 @@ impl CupsOptions {
 	///
 	/// **DANGER**: If this options list is empty, a null pointer is returned.
 	/// However, this is fine if passed to CUPS.
-	pub fn as_fat_ptr(&mut self) -> FatPointerMut<cups::cups_option_t> {
+	pub fn as_fat_ptr_mut(&mut self) -> FatPointerMut<cups::cups_option_t> {
 		self.opts
 	}
 }

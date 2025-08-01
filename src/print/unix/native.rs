@@ -3,7 +3,7 @@ use std::slice;
 
 use crate::error::PrintError;
 use crate::options::CopiesInt;
-use crate::print::unix::dest::CupsDestinations;
+use crate::print::unix::dest::{CupsDestinationInfo, CupsDestinations};
 use crate::print::unix::job::CupsJob;
 use crate::print::unix::options::CupsOptions;
 use crate::print::unix::{cstr_to_string, cups, job};
@@ -28,13 +28,13 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		let mut job_options = CupsOptions::new();
 		job_options.add(&CopiesInt(1));
 
+		let dest_info = CupsDestinationInfo::new(chosen_dest);
+
 		let context = job::PrintContext {
 			http: cups::consts::http::CUPS_HTTP_DEFAULT,
 			options: job_options,
 			destination: chosen_dest,
-			info: unsafe {
-				cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest)
-			},
+			info: dest_info,
 		};
 
 		let mut job = CupsJob::try_new("printrs", context)?;

@@ -1,4 +1,5 @@
 use crate::error::PrintError;
+use crate::print::unix::dest::CupsDestinationInfo;
 use crate::print::unix::options::CupsOptions;
 use crate::print::unix::{cstr_to_string, cups};
 use std::io::BufRead;
@@ -14,14 +15,7 @@ pub struct PrintContext {
 	pub http: *mut cups::http_t,
 	pub options: CupsOptions,
 	pub destination: *mut cups::cups_dest_t,
-	pub info: *mut cups::cups_dinfo_t,
-}
-impl Drop for PrintContext {
-	fn drop(&mut self) {
-		unsafe {
-			cups::cupsFreeDestInfo(self.info);
-		}
-	}
+	pub info: CupsDestinationInfo,
 }
 
 /// A struct that represents a CUPS job.
@@ -76,13 +70,13 @@ impl CupsJob {
 		let file_name = format!("{}-{}", self.title, self.amount_documents + 1);
 		start_upload(self.id, &file_name, &mut self.context)?;
 		upload(reader, &self.context)?;
-		finish_upload(&self.context)?;
+		finish_upload(&mut self.context)?;
 		self.amount_documents += 1;
 		Ok(())
 	}
 	/// Closes this job and starts printing.
 	pub fn print(mut self) -> Result<(), PrintError> {
-		close_job(self.id, &self.context)?;
+		close_job(self.id, &mut self.context)?;
 		self.cancel_on_drop = false;
 		Ok(())
 	}
@@ -105,11 +99,11 @@ fn create_job(title: &str, context: &mut PrintContext) -> Result<ffi::c_int, Pri
 		let status = cups::cupsCreateDestJob(
 			context.http,
 			context.destination,
-			context.info,
+			context.info.as_ptr_mut(),
 			&mut job_id,
 			title.as_ptr(),
-			context.options.as_fat_ptr().size,
-			context.options.as_fat_ptr().ptr,
+			context.options.as_fat_ptr_mut().size,
+			context.options.as_fat_ptr_mut().ptr,
 		);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			return Err(get_last_error());
@@ -130,12 +124,12 @@ fn start_upload(
 		let status = cups::cupsStartDestDocument(
 			context.http,
 			context.destination,
-			context.info,
+			context.info.as_ptr_mut(),
 			job_id,
 			filename.as_ptr(),
 			cups::consts::format::CUPS_FORMAT_AUTO.as_ptr(),
-			context.options.as_fat_ptr().size,
-			context.options.as_fat_ptr().ptr,
+			context.options.as_fat_ptr_mut().size,
+			context.options.as_fat_ptr_mut().ptr,
 			cups::consts::bool(false), // we always pass `false` here & start printing with closeDestJob
 		);
 		if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
@@ -178,9 +172,13 @@ where
 }
 
 /// Signals that the file transfer has finished.
-fn finish_upload(context: &PrintContext) -> Result<(), PrintError> {
+fn finish_upload(context: &mut PrintContext) -> Result<(), PrintError> {
 	unsafe {
-		let status = cups::cupsFinishDestDocument(context.http, context.destination, context.info);
+		let status = cups::cupsFinishDestDocument(
+			context.http,
+			context.destination,
+			context.info.as_ptr_mut(),
+		);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			return Err(get_last_error());
 		}
@@ -198,9 +196,15 @@ fn cancel_job(job_id: ffi::c_int, context: &PrintContext) -> Result<(), PrintErr
 }
 
 /// Closes the job with the specified ID and starts printing.
-fn close_job(job_id: ffi::c_int, context: &PrintContext) -> Result<(), PrintError> {
-	let status =
-		unsafe { cups::cupsCloseDestJob(context.http, context.destination, context.info, job_id) };
+fn close_job(job_id: ffi::c_int, context: &mut PrintContext) -> Result<(), PrintError> {
+	let status = unsafe {
+		cups::cupsCloseDestJob(
+			context.http,
+			context.destination,
+			context.info.as_ptr_mut(),
+			job_id,
+		)
+	};
 	if status != cups::ipp_status_e::IPP_STATUS_OK {
 		return Err(get_last_error());
 	}
