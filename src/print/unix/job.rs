@@ -1,7 +1,8 @@
 use crate::error::PrintError;
-use crate::print::unix::{FatPointerMut, cstr_to_string, cups};
+use crate::print::unix::options::CupsOptions;
+use crate::print::unix::{cstr_to_string, cups};
 use std::io::BufRead;
-use std::{ffi, io, ptr};
+use std::{ffi, io};
 
 /// The size of the buffer that is used for transfer to CUPS.
 const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
@@ -11,7 +12,7 @@ const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
 /// and `info` pointers once the owner goes out of scope.
 pub struct PrintContext {
 	pub http: *mut cups::http_t,
-	pub options: FatPointerMut<cups::cups_option_t>,
+	pub options: CupsOptions,
 	pub destination: *mut cups::cups_dest_t,
 	pub info: *mut cups::cups_dinfo_t,
 }
@@ -19,34 +20,8 @@ impl Drop for PrintContext {
 	fn drop(&mut self) {
 		unsafe {
 			cups::cupsFreeDestInfo(self.info);
-			cups::cupsFreeOptions(self.options.num, self.options.ptr);
 		}
 	}
-}
-
-/// Configures options for the print job.
-/// Returns a pointer to the options array.
-pub fn prepare_options_for_job(
-	copies: u32,
-) -> Result<FatPointerMut<cups::cups_option_t>, PrintError> {
-	let mut ptr_options = ptr::null_mut();
-	let mut num_options = 0;
-
-	let copies = copies.to_string();
-	let copies = ffi::CString::new(copies)?;
-	num_options = unsafe {
-		cups::cupsAddOption(
-			cups::consts::opts::CUPS_COPIES.as_ptr(),
-			copies.as_ptr(),
-			num_options,
-			&mut ptr_options,
-		)
-	};
-
-	Ok(FatPointerMut {
-		num: num_options,
-		ptr: ptr_options,
-	})
 }
 
 /// A struct that represents a CUPS job.
@@ -65,8 +40,8 @@ pub struct CupsJob {
 impl CupsJob {
 	/// Creates a CUPS job.
 	/// If successful, this will result in a new job on the CUPS server.
-	pub fn try_new(title: &str, context: PrintContext) -> Result<Self, PrintError> {
-		let job_id = create_job(title, &context)?;
+	pub fn try_new(title: &str, mut context: PrintContext) -> Result<Self, PrintError> {
+		let job_id = create_job(title, &mut context)?;
 		Ok(Self {
 			id: job_id,
 			title: title.to_owned(),
@@ -99,7 +74,7 @@ impl CupsJob {
 		R: std::io::Read,
 	{
 		let file_name = format!("{}-{}", self.title, self.amount_documents + 1);
-		start_upload(self.id, &file_name, &self.context)?;
+		start_upload(self.id, &file_name, &mut self.context)?;
 		upload(reader, &self.context)?;
 		finish_upload(&self.context)?;
 		self.amount_documents += 1;
@@ -122,7 +97,7 @@ impl Drop for CupsJob {
 }
 
 /// Creates a print job.
-fn create_job(title: &str, context: &PrintContext) -> Result<ffi::c_int, PrintError> {
+fn create_job(title: &str, context: &mut PrintContext) -> Result<ffi::c_int, PrintError> {
 	let title = ffi::CString::new(title)?;
 	let mut job_id = 0;
 
@@ -133,8 +108,8 @@ fn create_job(title: &str, context: &PrintContext) -> Result<ffi::c_int, PrintEr
 			context.info,
 			&mut job_id,
 			title.as_ptr(),
-			context.options.num,
-			context.options.ptr,
+			context.options.as_fat_ptr().size,
+			context.options.as_fat_ptr().ptr,
 		);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			return Err(get_last_error());
@@ -148,7 +123,7 @@ fn create_job(title: &str, context: &PrintContext) -> Result<ffi::c_int, PrintEr
 fn start_upload(
 	job_id: ffi::c_int,
 	file_name: &str,
-	context: &PrintContext,
+	context: &mut PrintContext,
 ) -> Result<(), PrintError> {
 	let filename = ffi::CString::new(file_name.as_bytes())?;
 	unsafe {
@@ -159,8 +134,8 @@ fn start_upload(
 			job_id,
 			filename.as_ptr(),
 			cups::consts::format::CUPS_FORMAT_AUTO.as_ptr(),
-			context.options.num,
-			context.options.ptr,
+			context.options.as_fat_ptr().size,
+			context.options.as_fat_ptr().ptr,
 			cups::consts::bool(false), // we always pass `false` here & start printing with closeDestJob
 		);
 		if status != cups::http_status_e::HTTP_STATUS_CONTINUE {

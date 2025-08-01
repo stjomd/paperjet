@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
+use std::ptr;
 
 use crate::options::*;
 use crate::print::unix::FatPointerMut;
@@ -13,24 +14,71 @@ pub struct CupsOptions {
 	/// A fat pointer to the array of options.
 	opts: FatPointerMut<cups::cups_option_t>,
 }
+impl CupsOptions {
+	/// Creates a new, empty list of CUPS options.
+	pub fn new() -> Self {
+		Self {
+			opts: FatPointerMut {
+				size: 0,
+				ptr: ptr::null_mut(),
+			},
+		}
+	}
+	/// Adds a CUPS option to this instance.
+	pub fn add<O>(&mut self, option: &O)
+	where
+		O: CupsOption,
+	{
+		// SAFETY: `cupsAddOption` accepts a name, value, current number of elements, and a pointer to
+		// `*mut cups_option_t`. It returns the new number of elements and writes a valid pointer
+		// into `self.opts.ptr`, after allocating an array of options. Thus repeated calls are safe
+		// until the memory is freed by calling `cupsFreeOptions`.
+		unsafe {
+			self.opts.size = cups::cupsAddOption(
+				O::get_cups_option_name().as_ptr(),
+				option.get_cups_option_value().as_ptr(),
+				self.opts.size,
+				&mut self.opts.ptr,
+			);
+		};
+	}
+	/// Converts this options list into a fat pointer, containing a pointer to the first element,
+	/// as well as a valid size.
+	///
+	/// **DANGER**: If this options list is empty, a null pointer is returned.
+	/// However, this is fine if passed to CUPS.
+	pub fn as_fat_ptr(&mut self) -> FatPointerMut<cups::cups_option_t> {
+		self.opts
+	}
+}
 impl Drop for CupsOptions {
 	fn drop(&mut self) {
-		// SAFETY: TODO
-		unsafe { cups::cupsFreeOptions(self.opts.num, self.opts.ptr) };
+		if self.opts.ptr.is_null() {
+			return;
+		}
+		// SAFETY: `self.opts` is a valid, non-null pointer, pointing to memory allocated by CUPS.
+		// It remains valid until `cupsFreeOptions` is called, which is now.
+		unsafe { cups::cupsFreeOptions(self.opts.size, self.opts.ptr) };
 	}
 }
 
-// MARK: - Option values
+// MARK: - CupsOption trait
 
 /// A trait that designates an option that can be converted to a CUPS option value string.
-pub trait ToCupsOptionValue {
+pub trait CupsOption {
+	/// Converts the option's type to a name accepted by CUPS.
+	/// Returns a borrowed C string.
+	fn get_cups_option_name() -> &'static CStr;
 	/// Converts the option's value to a string accepted by CUPS.
 	/// Returns either a borrowed or an owned value inside a [`Cow`] pointer.
-	fn to_cups_option_value(&self) -> Cow<'static, CStr>;
+	fn get_cups_option_value(&self) -> Cow<'static, CStr>;
 }
 
-impl ToCupsOptionValue for CopiesInt {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for CopiesInt {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_COPIES
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		let string = self.0.to_string();
 		// SAFETY: `string` is built from `self.0`, which is a C integer, and thus contains only bytes
 		// which correspond to digit characters, and no 0 bytes.
@@ -39,8 +87,11 @@ impl ToCupsOptionValue for CopiesInt {
 	}
 }
 
-impl ToCupsOptionValue for Finishing {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for Finishing {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_FINISHINGS
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			Finishing::Bind => opts::values::CUPS_FINISHINGS_BIND,
 			Finishing::Cover => opts::values::CUPS_FINISHINGS_COVER,
@@ -51,15 +102,18 @@ impl ToCupsOptionValue for Finishing {
 		})
 	}
 }
-impl ToCupsOptionValue for Vec<Finishing> {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for Vec<Finishing> {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_FINISHINGS
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		if self.is_empty() {
 			return Cow::Borrowed(opts::values::CUPS_FINISHINGS_NONE);
 		}
 		// We want a comma-separated string here:
 		let bytes = self
 			.iter()
-			.map(|finishing| finishing.to_cups_option_value())
+			.map(|finishing| finishing.get_cups_option_value())
 			.map(|cow| cow.to_bytes().to_vec())
 			.collect::<Vec<Vec<u8>>>()
 			.join(b",".as_slice());
@@ -72,8 +126,11 @@ impl ToCupsOptionValue for Vec<Finishing> {
 	}
 }
 
-impl ToCupsOptionValue for MediaSize {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for MediaSize {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_MEDIA
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			// ISO & A3+
 			MediaSize::A3 => opts::values::CUPS_MEDIA_A3,
@@ -97,8 +154,11 @@ impl ToCupsOptionValue for MediaSize {
 	}
 }
 
-impl ToCupsOptionValue for MediaSource {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for MediaSource {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_MEDIA_SOURCE
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			MediaSource::Auto => opts::values::CUPS_MEDIA_SOURCE_AUTO,
 			MediaSource::Manual => opts::values::CUPS_MEDIA_SOURCE_MANUAL,
@@ -106,8 +166,11 @@ impl ToCupsOptionValue for MediaSource {
 	}
 }
 
-impl ToCupsOptionValue for MediaType {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for MediaType {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_MEDIA_TYPE
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			MediaType::Auto => opts::values::CUPS_MEDIA_TYPE_AUTO,
 			MediaType::Envelope => opts::values::CUPS_MEDIA_TYPE_ENVELOPE,
@@ -122,8 +185,11 @@ impl ToCupsOptionValue for MediaType {
 	}
 }
 
-impl ToCupsOptionValue for NumberUpInt {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for NumberUpInt {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_NUMBER_UP
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		let string = self.0.to_string();
 		// SAFETY: `string` is built from `self.0`, which is a C integer, and thus contains only bytes
 		// which correspond to digit characters, and no 0 bytes.
@@ -132,8 +198,11 @@ impl ToCupsOptionValue for NumberUpInt {
 	}
 }
 
-impl ToCupsOptionValue for Orientation {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for Orientation {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_ORIENTATION
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			Orientation::Portrait => opts::values::CUPS_ORIENTATION_PORTRAIT,
 			Orientation::Landscape => opts::values::CUPS_ORIENTATION_LANDSCAPE,
@@ -141,8 +210,11 @@ impl ToCupsOptionValue for Orientation {
 	}
 }
 
-impl ToCupsOptionValue for ColorMode {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for ColorMode {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_PRINT_COLOR_MODE
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			ColorMode::Auto => opts::values::CUPS_PRINT_COLOR_MODE_AUTO,
 			ColorMode::Monochrome => opts::values::CUPS_PRINT_COLOR_MODE_MONOCHROME,
@@ -151,8 +223,11 @@ impl ToCupsOptionValue for ColorMode {
 	}
 }
 
-impl ToCupsOptionValue for Quality {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for Quality {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_PRINT_QUALITY
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			Quality::Draft => opts::values::CUPS_PRINT_QUALITY_DRAFT,
 			Quality::Normal => opts::values::CUPS_PRINT_QUALITY_NORMAL,
@@ -161,8 +236,11 @@ impl ToCupsOptionValue for Quality {
 	}
 }
 
-impl ToCupsOptionValue for SidesMode {
-	fn to_cups_option_value(&self) -> Cow<'static, CStr> {
+impl CupsOption for SidesMode {
+	fn get_cups_option_name() -> &'static CStr {
+		opts::CUPS_SIDES
+	}
+	fn get_cups_option_value(&self) -> Cow<'static, CStr> {
 		Cow::Borrowed(match self {
 			SidesMode::OneSided => opts::values::CUPS_SIDES_ONE_SIDED,
 			SidesMode::TwoSidedPortrait => opts::values::CUPS_SIDES_TWO_SIDED_PORTRAIT,
@@ -178,7 +256,7 @@ mod tests {
 
 	use crate::options::Finishing;
 	use crate::print::unix::cups::consts::opts;
-	use crate::print::unix::options::ToCupsOptionValue;
+	use crate::print::unix::options::CupsOption;
 
 	#[test]
 	fn if_empty_finishings_then_cups_finishings_none() {
@@ -186,7 +264,7 @@ mod tests {
 		let finishings: Vec<Finishing> = Vec::new();
 
 		// The CUPS option value should be CUPS_FINISHINGS_NONE:
-		let value = finishings.to_cups_option_value();
+		let value = finishings.get_cups_option_value();
 
 		assert_eq!(
 			opts::values::CUPS_FINISHINGS_NONE,
@@ -208,7 +286,7 @@ mod tests {
 		let finishings = vec![Finishing::Staple];
 
 		// The CUPS option value should be CUPS_FINISHINGS_STAPLE:
-		let value = finishings.to_cups_option_value();
+		let value = finishings.get_cups_option_value();
 
 		assert_eq!(
 			opts::values::CUPS_FINISHINGS_STAPLE,
@@ -230,19 +308,19 @@ mod tests {
 		let finishings = vec![Finishing::Staple, Finishing::Bind, Finishing::Punch];
 
 		// The CUPS option value should be comma separated string of respective integer constants:
-		let value = finishings.to_cups_option_value();
+		let value = finishings.get_cups_option_value();
 		let expected_str = format!(
 			"{},{},{}",
 			finishings[0]
-				.to_cups_option_value()
+				.get_cups_option_value()
 				.to_str()
 				.expect("Can't convert CUPS const to String"),
 			finishings[1]
-				.to_cups_option_value()
+				.get_cups_option_value()
 				.to_str()
 				.expect("Can't convert CUPS const to String"),
 			finishings[2]
-				.to_cups_option_value()
+				.get_cups_option_value()
 				.to_str()
 				.expect("Can't convert CUPS const to String")
 		);

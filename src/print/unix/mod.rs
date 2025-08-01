@@ -9,8 +9,22 @@ pub mod options;
 /// A mutable pointer along with a size (useful for dynamic arrays).
 #[derive(Clone, Copy)]
 pub struct FatPointerMut<T> {
-	pub num: ffi::c_int,
+	pub size: ffi::c_int,
 	pub ptr: *mut T,
+}
+impl<T> FatPointerMut<T> {
+	/// Returns the view into the memory behind this fat pointer as an immutable slice.
+	/// The pointer and the size must be valid.
+	pub unsafe fn as_slice(&self) -> &[T] {
+		// SAFETY: precondition requires the pointer and the size are valid.
+		unsafe { std::slice::from_raw_parts(self.ptr, self.size as usize) }
+	}
+	/// Returns the view into the memory behind this fat pointer as a mutable slice.
+	/// The pointer and the size must be valid.
+	pub unsafe fn as_slice_mut(&mut self) -> &mut [T] {
+		// SAFETY: precondition requires the pointer and the size are valid.
+		unsafe { std::slice::from_raw_parts_mut(self.ptr, self.size as usize) }
+	}
 }
 
 /// Performs lossy conversion from a [`ffi::CStr`] into [`String`].
@@ -22,24 +36,4 @@ unsafe fn cstr_to_str(ptr: *const ffi::c_char) -> borrow::Cow<'static, str> {
 /// Invalid characters are replaced with the replacement character.
 unsafe fn cstr_to_string(ptr: *const ffi::c_char) -> String {
 	unsafe { cstr_to_str(ptr).into_owned() }
-}
-
-/// Returns a slice viewing into the specified fat pointer.
-/// The pointer must be valid.
-unsafe fn fat_ptr_to_slice<'a, T>(ptr: &FatPointerMut<T>) -> &'a [T] {
-	if ptr.num > 0 {
-		unsafe { std::slice::from_raw_parts(ptr.ptr, ptr.num as usize) }
-	} else {
-		&mut []
-	}
-}
-
-/// Returns a mutable slice viewing into the specified fat pointer.
-/// The pointer must be valid.
-unsafe fn fat_ptr_to_slice_mut<'a, T>(ptr: &FatPointerMut<T>) -> &'a mut [T] {
-	if ptr.num > 0 {
-		unsafe { std::slice::from_raw_parts_mut(ptr.ptr, ptr.num as usize) }
-	} else {
-		&mut []
-	}
 }

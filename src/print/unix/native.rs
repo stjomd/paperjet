@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::slice;
 
 use crate::error::PrintError;
+use crate::options::CopiesInt;
 use crate::print::unix::dest::CupsDestinations;
 use crate::print::unix::job::CupsJob;
+use crate::print::unix::options::CupsOptions;
 use crate::print::unix::{cstr_to_string, cups, job};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
@@ -23,9 +25,12 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		let mut dests = CupsDestinations::new();
 		let chosen_dest = dests.get_mut(0).ok_or(PrintError::NoPrinters)?;
 
+		let mut job_options = CupsOptions::new();
+		job_options.add(&CopiesInt(1));
+
 		let context = job::PrintContext {
 			http: cups::consts::http::CUPS_HTTP_DEFAULT,
-			options: job::prepare_options_for_job(1)?,
+			options: job_options,
 			destination: chosen_dest,
 			info: unsafe {
 				cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, chosen_dest)
