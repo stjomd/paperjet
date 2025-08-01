@@ -9,8 +9,6 @@ use std::{ffi, io};
 const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
 
 /// Stores information related to a print job.
-/// Implements [`Drop`] and will free the memory behind `options`
-/// and `info` pointers once the owner goes out of scope.
 pub struct PrintContext {
 	pub http: *mut cups::http_t,
 	pub options: CupsOptions,

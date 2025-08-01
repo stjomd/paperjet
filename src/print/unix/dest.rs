@@ -55,15 +55,18 @@ impl Drop for CupsDestinations {
 
 // MARK: - Destination Info
 
+/// A struct representing CUPS information for a particular destination.
 pub struct CupsDestinationInfo {
 	ptr: *mut cups::cups_dinfo_t,
 }
 impl CupsDestinationInfo {
+	/// Creates an instance for a specified destination.
 	pub fn new(destination: &mut cups::cups_dest_t) -> Self {
 		let info =
 			unsafe { cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, destination) };
 		Self { ptr: info }
 	}
+	/// Converts this instance to a raw pointer.
 	pub fn as_ptr_mut(&mut self) -> *mut cups_dinfo_t {
 		self.ptr
 	}
