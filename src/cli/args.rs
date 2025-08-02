@@ -2,7 +2,8 @@ use clap::{ArgAction, Parser, Subcommand};
 use printrs::options::{
 	ColorMode, Finishing, MediaSize, MediaSource, MediaType, Orientation, Quality, SidesMode,
 };
-use std::path;
+use std::ffi::c_int;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(version, disable_version_flag = true)]
@@ -46,13 +47,13 @@ pub struct PrintArgs {
 	/// File extensions, types, or contents are not validated.
 	/// Support will be determined by the device's driver.
 	#[arg(value_name = "files", required = true, num_args = 1..)]
-	pub paths: Vec<path::PathBuf>,
+	pub paths: Vec<PathBuf>,
 
 	/// Amount of copies [default: 1]
 	///
 	/// In case of multiple files, this option applies to each of them.
-	#[arg(short, long)]
-	pub copies: Option<usize>,
+	#[arg(short, long, value_parser = clap::value_parser!(c_int).range(1..))]
+	pub copies: Option<c_int>,
 
 	/// Finishing processes to be performed by the printer.
 	#[arg(short, long, value_delimiter = ',')]
@@ -71,8 +72,8 @@ pub struct PrintArgs {
 	pub media_type: Option<MediaType>,
 
 	/// Number of document pages per media side [default: 1]
-	#[arg(short = 'u', long)]
-	pub number_up: Option<usize>,
+	#[arg(short = 'u', long, value_parser = clap::value_parser!(c_int).range(1..))]
+	pub number_up: Option<c_int>,
 
 	/// Orientation of document pages.
 	#[arg(short, long)]

@@ -1,4 +1,4 @@
-use std::{cmp, ffi};
+use std::cmp::Ordering;
 
 use printrs::Printer;
 use printrs::options::{CopiesInt, NumberUpInt, PrintOptions};
@@ -10,7 +10,7 @@ pub fn get_sorted_printers() -> Vec<Printer> {
 	let mut printers = printrs::get_printers();
 	printers.sort_by(|a, b| {
 		if a.is_default {
-			return cmp::Ordering::Less;
+			return Ordering::Less;
 		}
 		a.name.cmp(&b.name)
 	});
@@ -20,12 +20,12 @@ pub fn get_sorted_printers() -> Vec<Printer> {
 impl From<PrintArgs> for PrintOptions {
 	fn from(value: PrintArgs) -> PrintOptions {
 		PrintOptions {
-			copies: value.copies.map(|c| CopiesInt(c as ffi::c_int)),
+			copies: value.copies.map(CopiesInt::from),
 			finishings: value.finishings,
 			media_size: value.size,
 			media_source: value.source,
 			media_type: value.media_type,
-			number_up: value.number_up.map(|u| NumberUpInt(u as ffi::c_int)),
+			number_up: value.number_up.map(NumberUpInt::from),
 			orientation: value.orientation,
 			color_mode: value.color_mode,
 			quality: value.quality,

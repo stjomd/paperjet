@@ -47,6 +47,11 @@ macro_rules! impl_print_option {
 
 #[derive(Clone, Copy, Debug)]
 pub struct CopiesInt(pub c_int);
+impl From<c_int> for CopiesInt {
+	fn from(value: c_int) -> Self {
+		Self(value)
+	}
+}
 impl PrintOption for CopiesInt {
 	fn get_name() -> &'static str {
 		"Copies"
@@ -58,6 +63,11 @@ impl PrintOption for CopiesInt {
 
 #[derive(Clone, Copy, Debug)]
 pub struct NumberUpInt(pub c_int);
+impl From<c_int> for NumberUpInt {
+	fn from(value: c_int) -> Self {
+		Self(value)
+	}
+}
 impl PrintOption for NumberUpInt {
 	fn get_name() -> &'static str {
 		"Number Up"
