@@ -6,13 +6,12 @@ use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
 use crate::cli::common;
-use crate::cli::snapshot;
 
 type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
 pub fn display(args: DisplayArgs) {
-	let printer = get_printer_from_snapshot(args.id).or_else(|| get_printer_from_api_list(args.id));
+	let printer = common::get_printer_by_id(args.id);
 	let Some(printer) = printer else {
 		println!("No printer with ID {} was found.", args.id);
 		process::exit(1);
@@ -29,21 +28,6 @@ pub fn display(args: DisplayArgs) {
 		println!("\n{}", header.bold());
 		print_key_value_pairs(&options);
 	}
-}
-
-/// Retrieves the printer at the specified index in the snapshot, if present.
-fn get_printer_from_snapshot(idx: usize) -> Option<Printer> {
-	let snapshot = snapshot::printers::open()?;
-	let entry = snapshot.get(idx.saturating_sub(1))?;
-	printrs::get_printer(&entry.identifier)
-}
-
-/// Retrieves all printers from backend, then returns the printer with the specified index,
-/// if present.
-fn get_printer_from_api_list(idx: usize) -> Option<Printer> {
-	let printers = common::get_sorted_printers();
-	snapshot::printers::save(&printers);
-	printers.into_iter().nth(idx.saturating_sub(1))
 }
 
 /// Collects basic printer information into a map.

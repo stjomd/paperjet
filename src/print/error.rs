@@ -19,6 +19,6 @@ pub enum PrintError {
 	UnsupportedOption { name: String, value: String },
 
 	/// An error reported by the backend API (for example, CUPS on Unix systems).
-	#[error("backend error: {0}")]
+	#[error("{0}")]
 	Backend(String),
 }
