@@ -126,3 +126,26 @@ impl<'a> DerefMut for CupsDestinationInfo<'a> {
 		self.0
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use std::ffi;
+
+	use crate::print::unix::dest::CupsDestinations;
+	use crate::print::unix::{FatPointerMut, cups};
+
+	#[test]
+	fn if_no_destinations_then_get_always_none() {
+		// This CUPS dests array is empty:
+		let mut dests = [];
+		let fptr: FatPointerMut<cups::cups_dest_t> = FatPointerMut {
+			size: dests.len() as ffi::c_int,
+			ptr: &mut dests as *mut _,
+		};
+		let mut cups_destinations = CupsDestinations(fptr);
+		// Any call to .get() should return None:
+		assert!(cups_destinations.get(0).is_none());
+		assert!(cups_destinations.get(1).is_none());
+		assert!(cups_destinations.get(usize::MAX).is_none());
+	}
+}

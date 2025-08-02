@@ -165,11 +165,8 @@ where
 			break;
 		}
 		unsafe {
-			let status = cups::cupsWriteRequestData(
-				context.http,
-				buf.as_ptr() as *const ffi::c_char,
-				buf_len,
-			);
+			let status =
+				cups::cupsWriteRequestData(context.http, buf.as_ptr() as *const _, buf_len);
 			if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
 				return Err(get_last_error());
 			}
