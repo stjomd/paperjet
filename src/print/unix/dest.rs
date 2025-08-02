@@ -32,7 +32,8 @@ impl CupsDestinations {
 		// SAFETY: `cupsGetDests` accepts a pointer to `*mut cups_dest_t`, allocates an array,
 		// populates the passed in pointer with a valid pointer to the array, and returns the number
 		// of elemenets. These are valid until `cupsFreeDests` is called on drop.
-		let dests_num = unsafe { cups::cupsGetDests(&mut dests_ptr) };
+		let dests_num =
+			unsafe { cups::cupsGetDests2(cups::consts::http::CUPS_HTTP_DEFAULT, &mut dests_ptr) };
 		Self(FatPointerMut {
 			size: dests_num,
 			ptr: dests_ptr,
