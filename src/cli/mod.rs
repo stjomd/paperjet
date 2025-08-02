@@ -7,6 +7,7 @@ mod common;
 mod display;
 mod list;
 mod print;
+mod snapshot;
 
 /// Runs the command specified in the [`Args`] instance.
 pub fn run_command(args: Args) {

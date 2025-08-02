@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::slice;
 
 use crate::error::PrintError;
@@ -32,8 +32,8 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		I: IntoIterator<Item = R>,
 		R: std::io::Read,
 	{
-		let mut dest =
-			CupsDestination::new_by_name(&printer.identifier).ok_or(PrintError::NoPrinters)?;
+		let identifier = CString::new(printer.identifier.clone())?;
+		let mut dest = CupsDestination::new_by_name(&identifier).ok_or(PrintError::NoPrinters)?;
 
 		let cups_options = add_options(options, &mut dest)?;
 		let context = job::PrintContext::new(dest, cups_options);
@@ -100,7 +100,7 @@ fn map_dest_to_printer(dest: CupsDestination) -> Printer {
 		};
 
 		Printer {
-			identifier: CStr::from_ptr(dest.name).to_owned(),
+			identifier: cstr_to_string(dest.name),
 			name: cstr_to_string(dest.name),
 			instance,
 			is_default: dest.is_default == cups::consts::bool(true),

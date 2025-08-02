@@ -96,7 +96,7 @@ impl<'a> CupsDestination<'a> {
 		} else {
 			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
 			// a null pointer, and the null pointer has been checked in the previous branch,
-			// this is a valid pointer and can be safely casted to a reference.
+			// therefore this is a valid pointer and can be safely casted to a reference.
 			let reference = unsafe { &mut *dest };
 			Some(Self::new(reference))
 		}
@@ -118,7 +118,7 @@ impl<'a> CupsDestination<'a> {
 		} else {
 			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
 			// a null pointer, and the null pointer has been checked in the previous branch,
-			// this is a valid pointer and can be safely casted to a reference.
+			// therefore this is a valid pointer and can be safely casted to a reference.
 			let reference = unsafe { &mut *dest };
 			Some(Self::new(reference))
 		}
@@ -173,8 +173,6 @@ impl<'a> DerefMut for CupsDestinationInfo<'a> {
 
 #[cfg(test)]
 mod tests {
-	use std::ffi;
-
 	use crate::print::unix::dest::CupsDestinations;
 	use crate::print::unix::{FatPointerMut, cups};
 
@@ -183,8 +181,8 @@ mod tests {
 		// This CUPS dests array is empty:
 		let mut dests = [];
 		let fptr: FatPointerMut<cups::cups_dest_t> = FatPointerMut {
-			size: dests.len() as ffi::c_int,
-			ptr: &mut dests as *mut _,
+			size: dests.len() as _,
+			ptr: &mut dests as _,
 		};
 		let mut cups_destinations = CupsDestinations(fptr);
 		// Any call to .get() should return None:

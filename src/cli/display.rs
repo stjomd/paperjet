@@ -6,20 +6,13 @@ use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
 use crate::cli::common::get_sorted_printers;
+use crate::cli::snapshot;
 
 type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
 pub fn display(args: DisplayArgs) {
-	let printers = get_sorted_printers();
-	let filtered_printers = printers
-		.iter()
-		.enumerate()
-		.filter(|(i, _)| args.id == (*i + 1))
-		.map(|(_, p)| p)
-		.collect::<Vec<&Printer>>();
-
-	let printer = filtered_printers.first();
+	let printer = get_printer_from_snapshot(args.id).or_else(|| get_printer_from_api_list(args.id));
 	let Some(printer) = printer else {
 		println!("No printer with ID {} was found.", args.id);
 		process::exit(1);
@@ -27,15 +20,30 @@ pub fn display(args: DisplayArgs) {
 
 	println!("{}\n", printer.get_human_name().bold());
 
-	let info = collect_information(printer);
+	let info = collect_information(&printer);
 	print_key_value_pairs(&info);
 
 	if args.options {
-		let options = collect_options(printer);
+		let options = collect_options(&printer);
 		let header = format!("Options ({}):", printer.options.len());
 		println!("\n{}", header.bold());
 		print_key_value_pairs(&options);
 	}
+}
+
+/// Retrieves the printer at the specified index in the snapshot, if present.
+fn get_printer_from_snapshot(idx: usize) -> Option<Printer> {
+	let snapshot = snapshot::open()?;
+	let entry = snapshot.get(idx.saturating_sub(1))?;
+	printrs::get_printer(&entry.identifier)
+}
+
+/// Retrieves all printers from backend, then returns the printer with the specified index,
+/// if present.
+fn get_printer_from_api_list(idx: usize) -> Option<Printer> {
+	let printers = get_sorted_printers();
+	snapshot::save(&printers);
+	printers.into_iter().nth(idx.saturating_sub(1))
 }
 
 /// Collects basic printer information into a map.

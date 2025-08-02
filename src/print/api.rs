@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ffi::CString;
 use std::io;
 
 use crate::error::PrintError;
@@ -59,7 +58,7 @@ pub trait CrossPlatformApi {
 /// A struct representing a printer.
 #[derive(Debug)]
 pub struct Printer {
-	pub identifier: CString,
+	pub identifier: String,
 	pub name: String,
 	pub instance: Option<String>,
 	pub is_default: bool,

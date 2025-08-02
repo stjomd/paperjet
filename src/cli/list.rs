@@ -1,10 +1,12 @@
 use colored::Colorize;
 
 use crate::cli::common::get_sorted_printers;
+use crate::cli::snapshot;
 
 /// The `list` command.
 pub fn list() {
-	for (i, printer) in get_sorted_printers().iter().enumerate() {
+	let printers = get_sorted_printers();
+	for (i, printer) in printers.iter().enumerate() {
 		let index = i + 1;
 		let name = printer.get_option("printer-info").unwrap_or(&printer.name);
 
@@ -15,4 +17,5 @@ pub fn list() {
 			println!("{}", line.bold());
 		}
 	}
+	snapshot::save(&printers);
 }
