@@ -5,7 +5,7 @@ use colored::Colorize;
 use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
-use crate::cli::common::get_sorted_printers;
+use crate::cli::common;
 use crate::cli::snapshot;
 
 type KeyValueMap = HashMap<String, Option<String>>;
@@ -33,7 +33,7 @@ pub fn display(args: DisplayArgs) {
 
 /// Retrieves the printer at the specified index in the snapshot, if present.
 fn get_printer_from_snapshot(idx: usize) -> Option<Printer> {
-	let snapshot = snapshot::open()?;
+	let snapshot = snapshot::printers::open()?;
 	let entry = snapshot.get(idx.saturating_sub(1))?;
 	printrs::get_printer(&entry.identifier)
 }
@@ -41,8 +41,8 @@ fn get_printer_from_snapshot(idx: usize) -> Option<Printer> {
 /// Retrieves all printers from backend, then returns the printer with the specified index,
 /// if present.
 fn get_printer_from_api_list(idx: usize) -> Option<Printer> {
-	let printers = get_sorted_printers();
-	snapshot::save(&printers);
+	let printers = common::get_sorted_printers();
+	snapshot::printers::save(&printers);
 	printers.into_iter().nth(idx.saturating_sub(1))
 }
 

@@ -5,35 +5,37 @@ use printrs::Printer;
 
 /// The subdirectory inside the system-specific cache directory.
 const SNAPSHOT_SUBDIR_NAME: &str = concat!("com.github.stjomd.", env!("CARGO_BIN_NAME"));
-/// The name of the snapshot file.
-const SNAPSHOT_FILE_NAME: &str = "printers.snapshot";
 
-/// Saves a snapshot of the specified printers.
-pub fn save(printers: &[Printer]) {
+/// Saves a snapshot of the specified items.
+fn save_all<'a, T, S>(items: &'a [T], file_name: &str)
+where
+	S: From<&'a T> + bincode::Encode,
+{
 	let Some(cache_dir) = get_snapshot_dir(SNAPSHOT_SUBDIR_NAME) else {
 		return;
 	};
-	let Some(mut file) = File::create(cache_dir.join(SNAPSHOT_FILE_NAME)).ok() else {
+	let Some(mut file) = File::create(cache_dir.join(file_name)).ok() else {
 		return;
 	};
 
-	let snapshot = printers
-		.iter()
-		.map(PrinterSnapshot::from)
-		.collect::<Vec<_>>();
-
+	let snapshot = items.iter().map(|item| S::from(item)).collect::<Vec<_>>();
 	let _ = bincode::encode_into_std_write(snapshot, &mut file, bincode::config::standard());
 }
 
-pub fn open() -> Option<Vec<PrinterSnapshot>> {
+/// Opens the snapshot file and deserializes the contents.
+fn open<S>(file_name: &str) -> Option<S>
+where
+	S: bincode::Decode<()>,
+{
 	let dir = get_snapshot_dir(SNAPSHOT_SUBDIR_NAME)?;
-	let mut file = File::open(dir.join(SNAPSHOT_FILE_NAME)).ok()?;
+	let mut file = File::open(dir.join(file_name)).ok()?;
 	bincode::decode_from_std_read(&mut file, bincode::config::standard()).ok()
 }
 
 // MARK: - Snapshot types
 
 #[derive(Debug, bincode::Encode, bincode::Decode)]
+/// Data representing snapshot of a printer.
 pub struct PrinterSnapshot {
 	pub human_name: String,
 	pub identifier: String,
@@ -44,6 +46,23 @@ impl From<&Printer> for PrinterSnapshot {
 			human_name: value.get_human_name().clone(),
 			identifier: value.identifier.clone(),
 		}
+	}
+}
+
+pub mod printers {
+	use super::PrinterSnapshot;
+	use printrs::Printer;
+
+	/// The name of the snapshot file.
+	const SNAPSHOT_FILE_NAME: &str = "printers.snapshot";
+
+	/// Saves a snapshot of the specified printers.
+	pub fn save(printers: &[Printer]) {
+		super::save_all::<_, PrinterSnapshot>(printers, SNAPSHOT_FILE_NAME);
+	}
+	/// Opens the snapshot file and returns its deserialized contents.
+	pub fn open() -> Option<Vec<PrinterSnapshot>> {
+		super::open(SNAPSHOT_FILE_NAME)
 	}
 }
 

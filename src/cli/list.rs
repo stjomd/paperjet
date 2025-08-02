@@ -17,5 +17,5 @@ pub fn list() {
 			println!("{}", line.bold());
 		}
 	}
-	snapshot::save(&printers);
+	snapshot::printers::save(&printers);
 }
