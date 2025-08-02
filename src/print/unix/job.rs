@@ -10,12 +10,12 @@ use std::{ffi, io};
 const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
 
 /// Stores information related to a print job.
-pub struct PrintContext<'a> {
-	pub http: *mut cups::http_t,
-	pub options: CupsOptions,
-	pub destination: CupsDestination<'a>,
+pub struct JobContext<'a> {
+	http: *mut cups::http_t,
+	options: CupsOptions,
+	destination: CupsDestination<'a>,
 }
-impl<'a> PrintContext<'a> {
+impl<'a> JobContext<'a> {
 	pub fn new(destination: CupsDestination<'a>, options: CupsOptions) -> Self {
 		let http = cups::consts::http::CUPS_HTTP_DEFAULT;
 		Self {
@@ -33,7 +33,7 @@ pub struct CupsJob<'a> {
 	/// Title of the job.
 	title: String,
 	/// The context of the print job.
-	context: PrintContext<'a>,
+	context: JobContext<'a>,
 	/// The amount of submitted documents.
 	amount_documents: usize,
 	/// Flag indicating whether the job should be cancelled when the value is dropped.
@@ -42,7 +42,12 @@ pub struct CupsJob<'a> {
 impl<'a> CupsJob<'a> {
 	/// Creates a CUPS job.
 	/// If successful, this will result in a new job on the CUPS server.
-	pub fn try_new(title: &str, mut context: PrintContext<'a>) -> Result<Self, PrintError> {
+	pub fn try_new(
+		title: &str,
+		dest: CupsDestination<'a>,
+		opts: CupsOptions,
+	) -> Result<Self, PrintError> {
+		let mut context = JobContext::new(dest, opts);
 		let job_id = create_job(title, &mut context)?;
 		Ok(Self {
 			id: job_id,
@@ -99,7 +104,7 @@ impl<'a> Drop for CupsJob<'a> {
 }
 
 /// Creates a print job.
-fn create_job(title: &str, context: &mut PrintContext) -> Result<ffi::c_int, PrintError> {
+fn create_job(title: &str, context: &mut JobContext) -> Result<ffi::c_int, PrintError> {
 	let title = ffi::CString::new(title)?;
 	let mut job_id = 0;
 
@@ -125,7 +130,7 @@ fn create_job(title: &str, context: &mut PrintContext) -> Result<ffi::c_int, Pri
 fn start_upload(
 	job_id: ffi::c_int,
 	file_name: &str,
-	context: &mut PrintContext,
+	context: &mut JobContext,
 ) -> Result<(), PrintError> {
 	let filename = ffi::CString::new(file_name.as_bytes())?;
 	unsafe {
@@ -150,7 +155,7 @@ fn start_upload(
 /// Reads the contents from a specified reader, and transfers them to CUPS.
 /// This function wraps the provided [`reader`] in a [`std::io::BufReader`],
 /// thus there is no need to do this at the call site.
-fn upload<R>(reader: R, context: &PrintContext) -> Result<(), PrintError>
+fn upload<R>(reader: R, context: &JobContext) -> Result<(), PrintError>
 where
 	R: io::Read,
 {
@@ -177,7 +182,7 @@ where
 }
 
 /// Signals that the file transfer has finished.
-fn finish_upload(context: &mut PrintContext) -> Result<(), PrintError> {
+fn finish_upload(context: &mut JobContext) -> Result<(), PrintError> {
 	unsafe {
 		let status = cups::cupsFinishDestDocument(
 			context.http,
@@ -192,7 +197,7 @@ fn finish_upload(context: &mut PrintContext) -> Result<(), PrintError> {
 }
 
 /// Cancels the job with the specified ID.
-fn cancel_job(job_id: ffi::c_int, context: &mut PrintContext) -> Result<(), PrintError> {
+fn cancel_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintError> {
 	let status =
 		unsafe { cups::cupsCancelDestJob(context.http, context.destination.deref_mut(), job_id) };
 	if status != cups::ipp_status_e::IPP_STATUS_OK {
@@ -202,7 +207,7 @@ fn cancel_job(job_id: ffi::c_int, context: &mut PrintContext) -> Result<(), Prin
 }
 
 /// Closes the job with the specified ID and starts printing.
-fn close_job(job_id: ffi::c_int, context: &mut PrintContext) -> Result<(), PrintError> {
+fn close_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintError> {
 	let status = unsafe {
 		cups::cupsCloseDestJob(
 			context.http,

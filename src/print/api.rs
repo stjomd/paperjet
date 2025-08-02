@@ -21,7 +21,7 @@ pub fn get_default_printer() -> Option<Printer> {
 }
 
 /// Prints the contents of each of the specified [`readers`].
-pub fn print<I, R>(readers: I, printer: &Printer, options: PrintOptions) -> Result<(), PrintError>
+pub fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 where
 	I: IntoIterator<Item = R>,
 	R: io::Read,
@@ -47,7 +47,7 @@ pub trait CrossPlatformApi {
 	fn get_default_printer() -> Option<Printer>;
 
 	/// See [`crate::print::print()`].
-	fn print<I, R>(readers: I, printer: &Printer, options: PrintOptions) -> Result<(), PrintError>
+	fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
 		R: io::Read;

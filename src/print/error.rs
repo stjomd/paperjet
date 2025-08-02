@@ -2,6 +2,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum PrintError {
+	/// An error that indicates that no printer with the given name could be found.
+	#[error("could not find printer: {0}")]
+	PrinterNotFound(String),
+
 	/// An error that indicates that there are no printers to work with.
 	#[error("no printers available")]
 	NoPrinters,

@@ -20,6 +20,6 @@ pub fn print(args: PrintArgs) -> Result<(), PrintError> {
 	}?;
 
 	let options = PrintOptions::from(args);
-	printrs::print(files, &printer, options)
+	printrs::print(files, printer, options)
 		.inspect(|_| println!("Files have been submitted for printing."))
 }

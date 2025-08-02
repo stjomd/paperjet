@@ -7,7 +7,7 @@ use crate::options::PrintOptions;
 use crate::print::unix::dest::{CupsDestination, CupsDestinations};
 use crate::print::unix::job::CupsJob;
 use crate::print::unix::options::{CupsOption, CupsOptions};
-use crate::print::unix::{cstr_to_string, cups, job};
+use crate::print::unix::{cstr_to_string, cups};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
 impl CrossPlatformApi for PlatformSpecificApi {
@@ -27,21 +27,20 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		CupsDestination::new_default().map(map_dest_to_printer)
 	}
 
-	fn print<I, R>(readers: I, printer: &Printer, options: PrintOptions) -> Result<(), PrintError>
+	fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
 		R: std::io::Read,
 	{
-		let identifier = CString::new(printer.identifier.clone())?;
-		let mut dest = CupsDestination::new_by_name(&identifier).ok_or(PrintError::NoPrinters)?;
+		let id = CString::new(printer.identifier.clone())?;
+		let mut cups_dest = CupsDestination::new_by_name(&id)
+			.ok_or(PrintError::PrinterNotFound(printer.identifier))?;
 
-		let cups_options = add_options(options, &mut dest)?;
-		let context = job::PrintContext::new(dest, cups_options);
+		let cups_opts = add_options(options, &mut cups_dest)?;
+		let mut job = CupsJob::try_new("printrs", cups_dest, cups_opts)?;
 
-		let mut job = CupsJob::try_new("printrs", context)?;
 		job.add_documents(readers)?;
-		job.print()?;
-		Ok(())
+		job.print()
 	}
 }
 
