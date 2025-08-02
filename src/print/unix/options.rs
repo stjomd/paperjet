@@ -10,6 +10,7 @@ use crate::print::unix::cups::consts::opts;
 // MARK: - Cups Options Struct
 
 /// A struct representing an array of options allocated by CUPS.
+#[derive(Debug)]
 pub struct CupsOptions {
 	/// A fat pointer to the array of options.
 	opts: FatPointerMut<cups::cups_option_t>,

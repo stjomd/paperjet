@@ -1,51 +1,49 @@
 use crate::error::PrintError;
-use crate::print::unix::dest::CupsDestinationInfo;
+use crate::print::unix::dest::CupsDestination;
 use crate::print::unix::options::CupsOptions;
 use crate::print::unix::{cstr_to_string, cups};
 use std::io::BufRead;
+use std::ops::DerefMut;
 use std::{ffi, io};
 
 /// The size of the buffer that is used for transfer to CUPS.
 const FILE_BUFFER_SIZE: usize = 65536; // 64 KiB
 
 /// Stores information related to a print job.
-pub struct PrintContext {
+pub struct PrintContext<'a> {
 	pub http: *mut cups::http_t,
 	pub options: CupsOptions,
-	pub destination: *mut cups::cups_dest_t,
-	pub info: CupsDestinationInfo,
+	pub destination: CupsDestination<'a>,
 }
-impl PrintContext {
-	pub fn new(destination: &mut cups::cups_dest_t) -> Self {
+impl<'a> PrintContext<'a> {
+	pub fn new(destination: CupsDestination<'a>) -> Self {
 		let http = cups::consts::http::CUPS_HTTP_DEFAULT;
 		let options = CupsOptions::new();
-		let info = CupsDestinationInfo::new(destination);
 		Self {
 			http,
 			options,
 			destination,
-			info,
 		}
 	}
 }
 
 /// A struct that represents a CUPS job.
-pub struct CupsJob {
+pub struct CupsJob<'a> {
 	/// The job ID, assigned by CUPS.
 	id: ffi::c_int,
 	/// Title of the job.
 	title: String,
 	/// The context of the print job.
-	context: PrintContext,
+	context: PrintContext<'a>,
 	/// The amount of submitted documents.
 	amount_documents: usize,
 	/// Flag indicating whether the job should be cancelled when the value is dropped.
 	cancel_on_drop: bool,
 }
-impl CupsJob {
+impl<'a> CupsJob<'a> {
 	/// Creates a CUPS job.
 	/// If successful, this will result in a new job on the CUPS server.
-	pub fn try_new(title: &str, mut context: PrintContext) -> Result<Self, PrintError> {
+	pub fn try_new(title: &str, mut context: PrintContext<'a>) -> Result<Self, PrintError> {
 		let job_id = create_job(title, &mut context)?;
 		Ok(Self {
 			id: job_id,
@@ -92,10 +90,10 @@ impl CupsJob {
 		Ok(())
 	}
 }
-impl Drop for CupsJob {
+impl<'a> Drop for CupsJob<'a> {
 	fn drop(&mut self) {
 		if self.cancel_on_drop {
-			let _ = cancel_job(self.id, &self.context)
+			let _ = cancel_job(self.id, &mut self.context)
 				.inspect_err(|e| eprintln!("could not cancel job during drop: {e}"));
 		}
 	}
@@ -109,8 +107,8 @@ fn create_job(title: &str, context: &mut PrintContext) -> Result<ffi::c_int, Pri
 	unsafe {
 		let status = cups::cupsCreateDestJob(
 			context.http,
-			context.destination,
-			context.info.as_ptr_mut(),
+			context.destination.deref_mut(),
+			context.destination.get_info().deref_mut(),
 			&mut job_id,
 			title.as_ptr(),
 			context.options.as_fat_ptr_mut().size,
@@ -134,8 +132,8 @@ fn start_upload(
 	unsafe {
 		let status = cups::cupsStartDestDocument(
 			context.http,
-			context.destination,
-			context.info.as_ptr_mut(),
+			context.destination.deref_mut(),
+			context.destination.get_info().deref_mut(),
 			job_id,
 			filename.as_ptr(),
 			cups::consts::format::CUPS_FORMAT_AUTO.as_ptr(),
@@ -187,8 +185,8 @@ fn finish_upload(context: &mut PrintContext) -> Result<(), PrintError> {
 	unsafe {
 		let status = cups::cupsFinishDestDocument(
 			context.http,
-			context.destination,
-			context.info.as_ptr_mut(),
+			context.destination.deref_mut(),
+			context.destination.get_info().deref_mut(),
 		);
 		if status != cups::ipp_status_e::IPP_STATUS_OK {
 			return Err(get_last_error());
@@ -198,8 +196,9 @@ fn finish_upload(context: &mut PrintContext) -> Result<(), PrintError> {
 }
 
 /// Cancels the job with the specified ID.
-fn cancel_job(job_id: ffi::c_int, context: &PrintContext) -> Result<(), PrintError> {
-	let status = unsafe { cups::cupsCancelDestJob(context.http, context.destination, job_id) };
+fn cancel_job(job_id: ffi::c_int, context: &mut PrintContext) -> Result<(), PrintError> {
+	let status =
+		unsafe { cups::cupsCancelDestJob(context.http, context.destination.deref_mut(), job_id) };
 	if status != cups::ipp_status_e::IPP_STATUS_OK {
 		return Err(get_last_error());
 	}
@@ -211,8 +210,8 @@ fn close_job(job_id: ffi::c_int, context: &mut PrintContext) -> Result<(), Print
 	let status = unsafe {
 		cups::cupsCloseDestJob(
 			context.http,
-			context.destination,
-			context.info.as_ptr_mut(),
+			context.destination.deref_mut(),
+			context.destination.get_info().deref_mut(),
 			job_id,
 		)
 	};

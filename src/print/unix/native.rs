@@ -3,7 +3,7 @@ use std::slice;
 
 use crate::error::PrintError;
 use crate::options::CopiesInt;
-use crate::print::unix::dest::CupsDestinations;
+use crate::print::unix::dest::{CupsDestination, CupsDestinations};
 use crate::print::unix::job::CupsJob;
 use crate::print::unix::{cstr_to_string, cups, job};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
@@ -11,8 +11,7 @@ use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 impl CrossPlatformApi for PlatformSpecificApi {
 	fn get_printers() -> Vec<Printer> {
 		CupsDestinations::new()
-			.as_slice()
-			.iter()
+			.into_iter()
 			.map(map_dest_to_printer)
 			.collect()
 	}
@@ -22,7 +21,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		R: std::io::Read,
 	{
 		let mut dests = CupsDestinations::new();
-		let chosen_dest = dests.get_mut(0).ok_or(PrintError::NoPrinters)?;
+		let chosen_dest = dests.get(0).ok_or(PrintError::NoPrinters)?;
 
 		let mut context = job::PrintContext::new(chosen_dest);
 		context.options.add(&CopiesInt(1));
@@ -36,7 +35,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 
 /// Maps an instance of [`cups::cups_dest_t`] to a [`Printer`].
 /// The argument's pointers must all be valid.
-fn map_dest_to_printer(dest: &cups::cups_dest_t) -> Printer {
+fn map_dest_to_printer(dest: CupsDestination) -> Printer {
 	unsafe {
 		let options = slice::from_raw_parts(dest.options, dest.num_options as usize)
 			.iter()
