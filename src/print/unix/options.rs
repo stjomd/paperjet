@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
+use std::ops::DerefMut;
 use std::ptr;
 
 use crate::options::*;
 use crate::print::unix::FatPointerMut;
 use crate::print::unix::cups;
 use crate::print::unix::cups::consts::opts;
+use crate::print::unix::dest::CupsDestination;
 
 // MARK: - Cups Options Struct
 
@@ -42,6 +44,24 @@ impl CupsOptions {
 				&mut self.opts.ptr,
 			);
 		};
+	}
+	/// Checks with a particular destination whether the option and its value are supported.
+	pub fn validate<O>(&self, destination: &mut CupsDestination, option: &O) -> bool
+	where
+		O: CupsOption,
+	{
+		// SAFETY: `destination` is a CupsDestination instance, which can only be constructed safely,
+		// contains a reference and thus the pointer it dereferences to is valid.
+		let result = unsafe {
+			cups::cupsCheckDestSupported(
+				cups::consts::http::CUPS_HTTP_DEFAULT,
+				destination.deref_mut(),
+				destination.get_info().deref_mut(),
+				O::get_cups_option_name().as_ptr(),
+				option.get_cups_option_value().as_ptr(),
+			)
+		};
+		result == cups::consts::bool(true)
 	}
 	/// Converts this options list into a fat pointer, containing a pointer to the first element,
 	/// as well as a valid size.

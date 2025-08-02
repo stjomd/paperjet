@@ -5,6 +5,7 @@ use crate::error::PrintError;
 use crate::options::CopiesInt;
 use crate::print::unix::dest::{CupsDestination, CupsDestinations};
 use crate::print::unix::job::CupsJob;
+use crate::print::unix::options::{CupsOption, CupsOptions};
 use crate::print::unix::{cstr_to_string, cups, job};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
@@ -21,10 +22,20 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		R: std::io::Read,
 	{
 		let mut dests = CupsDestinations::new();
-		let chosen_dest = dests.get(0).ok_or(PrintError::NoPrinters)?;
+		let mut chosen_dest = dests.get(0).ok_or(PrintError::NoPrinters)?;
 
-		let mut context = job::PrintContext::new(chosen_dest);
-		context.options.add(&CopiesInt(1));
+		let mut options = CupsOptions::new();
+		let opt = CopiesInt(1);
+		let valid = options.validate(&mut chosen_dest, &opt);
+		if !valid {
+			return Err(PrintError::UnsupportedOption {
+				name: "CopiesInt".to_owned(),
+				value: opt.get_cups_option_value().to_string_lossy().into_owned(),
+			});
+		}
+		options.add(&opt);
+
+		let context = job::PrintContext::new(chosen_dest, options);
 
 		let mut job = CupsJob::try_new("printrs", context)?;
 		job.add_documents(readers)?;

@@ -16,9 +16,8 @@ pub struct PrintContext<'a> {
 	pub destination: CupsDestination<'a>,
 }
 impl<'a> PrintContext<'a> {
-	pub fn new(destination: CupsDestination<'a>) -> Self {
+	pub fn new(destination: CupsDestination<'a>, options: CupsOptions) -> Self {
 		let http = cups::consts::http::CUPS_HTTP_DEFAULT;
-		let options = CupsOptions::new();
 		Self {
 			http,
 			options,
