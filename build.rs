@@ -23,6 +23,7 @@ const CUPS_ALLOWED_FUNCTIONS: &[&str] = &[
 	"cupsFreeDests",
 	"cupsFreeOptions",
 	"cupsGetDests2",
+	"cupsGetNamedDest",
 	"cupsLastErrorString",
 	"cupsStartDestDocument",
 	"cupsWriteRequestData",

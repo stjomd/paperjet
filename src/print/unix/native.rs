@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ffi::{CStr, CString};
 use std::slice;
 
 use crate::error::PrintError;
@@ -16,16 +17,26 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			.map(map_dest_to_printer)
 			.collect()
 	}
-	fn print<I, R>(readers: I, options: PrintOptions) -> Result<(), PrintError>
+
+	fn get_printer(name: &str) -> Option<Printer> {
+		let name = CString::new(name).ok()?;
+		CupsDestination::new_by_name(name.as_c_str()).map(map_dest_to_printer)
+	}
+
+	fn get_default_printer() -> Option<Printer> {
+		CupsDestination::new_default().map(map_dest_to_printer)
+	}
+
+	fn print<I, R>(readers: I, printer: &Printer, options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
 		R: std::io::Read,
 	{
-		let mut dests = CupsDestinations::new();
-		let mut chosen_dest = dests.get(0).ok_or(PrintError::NoPrinters)?;
+		let mut dest =
+			CupsDestination::new_by_name(&printer.identifier).ok_or(PrintError::NoPrinters)?;
 
-		let cups_options = add_options(options, &mut chosen_dest)?;
-		let context = job::PrintContext::new(chosen_dest, cups_options);
+		let cups_options = add_options(options, &mut dest)?;
+		let context = job::PrintContext::new(dest, cups_options);
 
 		let mut job = CupsJob::try_new("printrs", context)?;
 		job.add_documents(readers)?;
@@ -89,6 +100,7 @@ fn map_dest_to_printer(dest: CupsDestination) -> Printer {
 		};
 
 		Printer {
+			identifier: CStr::from_ptr(dest.name).to_owned(),
 			name: cstr_to_string(dest.name),
 			instance,
 			is_default: dest.is_default == cups::consts::bool(true),

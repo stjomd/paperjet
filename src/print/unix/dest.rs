@@ -1,3 +1,4 @@
+use std::ffi::CStr;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::ptr;
@@ -77,10 +78,55 @@ impl<'a> IntoIterator for &'a mut CupsDestinations {
 
 pub struct CupsDestination<'a>(&'a mut cups::cups_dest_t, CupsDestinationInfo<'a>);
 impl<'a> CupsDestination<'a> {
+	/// Wraps a valid destination in this struct.
 	fn new(dest: &'a mut cups::cups_dest_t) -> Self {
 		let info = CupsDestinationInfo::new(dest);
 		Self(dest, info)
 	}
+	/// Retrieves a destination by its name.
+	pub fn new_by_name(name: &CStr) -> Option<Self> {
+		// SAFETY: `cupsGetNamedDest` accepts null pointers for any of the parameters, and returns
+		// a valid pointer to a destination if it is found, or a null pointer otherwise.
+		let dest = unsafe {
+			cups::cupsGetNamedDest(
+				cups::consts::http::CUPS_HTTP_DEFAULT,
+				name.as_ptr(),
+				ptr::null(),
+			)
+		};
+		if dest.is_null() {
+			None
+		} else {
+			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
+			// a null pointer, and the null pointer has been checked in the previous branch,
+			// this is a valid pointer and can be safely casted to a reference.
+			let reference = unsafe { &mut *dest };
+			Some(Self::new(reference))
+		}
+	}
+	/// Retrieves the default destination.
+	pub fn new_default() -> Option<Self> {
+		// SAFETY: `cupsGetNamedDest` accepts null pointers for any of the parameters, and returns
+		// a valid pointer to a destination if it is found, or a null pointer otherwise.
+		// In this case, since `name` is `ptr::null()`, the default destination will be returned.
+		let dest = unsafe {
+			cups::cupsGetNamedDest(
+				cups::consts::http::CUPS_HTTP_DEFAULT,
+				ptr::null(),
+				ptr::null(),
+			)
+		};
+		if dest.is_null() {
+			None
+		} else {
+			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
+			// a null pointer, and the null pointer has been checked in the previous branch,
+			// this is a valid pointer and can be safely casted to a reference.
+			let reference = unsafe { &mut *dest };
+			Some(Self::new(reference))
+		}
+	}
+	/// Returns this destination's information.
 	pub fn get_info(&mut self) -> &mut CupsDestinationInfo<'a> {
 		&mut self.1
 	}

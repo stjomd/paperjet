@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use printrs::error::PrintError;
+use printrs::get_default_printer;
 use printrs::options::PrintOptions;
 
 use crate::cli::args::PrintArgs;
@@ -13,6 +14,9 @@ pub fn print(args: PrintArgs) -> Result<(), PrintError> {
 		.map(File::open)
 		.collect::<Result<_, _>>()?;
 
+	let printer = get_default_printer().ok_or(PrintError::NoPrinters)?;
+
 	let options = PrintOptions::from(args);
-	printrs::print(files, options).inspect(|_| println!("Files have been submitted for printing."))
+	printrs::print(files, &printer, options)
+		.inspect(|_| println!("Files have been submitted for printing."))
 }
