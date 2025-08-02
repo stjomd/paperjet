@@ -7,19 +7,16 @@ use crate::print::unix::FatPointerMut;
 use crate::print::unix::cups;
 
 // NOTE: the point of these structs/wrappers is to adapt unsafe bindings to safe Rust types.
-// It is IMPORTANT that these structs do not expose any public initializers, public constructors
-// that accept pointers or references, even transitively, or make the internal fields modifiable,
-// since this can endanger safety.
+// It is IMPORTANT that these structs do not rely on caller input during initialization if
+// performing unsafe operations. They also MUST NOT mutably expose their contents.
 //
-// These wrappers are 'chained':
-// CupsDestinations::new constructs an instance with a valid pointer to an array of destinations.
-// CupsDestinations::get uses this valid pointer to return a particular, valid CupsDestination,
-// 		which thus stores a safe reference. It can't outlive CupsDestinations.
-// CupsDestination::get_info uses this reference to return a valid CupsDestinationInfo, which
-// 		itself stores a safe reference. It can't outlive CupsDestination, and thus CupsDestinations.
+// These wrappers are chained:
+// 		- CupsDestinations<'a> contains any number of CupsDestination<'a>
+//		- CupsDestination<'a> contains CupsDestinationInfo<'a>
+// The lifetimes are passed down, so that a child instance lives no longer than its parent, if any.
+// This is due to the fact that the memory these structs reference is related.
 //
-// Because CUPS works with mutable pointers a lot, we need to store mutable references and thus
-// often require a mutable reference in the functions.
+// These structs MUST only expose safe constructors that do not accept references or pointers.
 
 // MARK: - Destinations Array
 
