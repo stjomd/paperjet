@@ -1,22 +1,17 @@
 use std::collections::HashMap;
-use std::process;
 
 use colored::Colorize;
 use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
 use crate::cli::common;
+use crate::cli::error::CliError;
 
 type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
-pub fn display(args: DisplayArgs) {
-	let printer = common::get_printer_by_id(args.id);
-	let Some(printer) = printer else {
-		println!("No printer with ID {} was found.", args.id);
-		process::exit(1);
-	};
-
+pub fn display(args: DisplayArgs) -> Result<(), CliError> {
+	let printer = common::get_printer_by_id(args.id).ok_or(CliError::PrinterNotFound(args.id))?;
 	println!("{}\n", printer.get_human_name().bold());
 
 	let info = collect_information(&printer);
@@ -28,6 +23,7 @@ pub fn display(args: DisplayArgs) {
 		println!("\n{}", header.bold());
 		print_key_value_pairs(&options);
 	}
+	Ok(())
 }
 
 /// Collects basic printer information into a map.
