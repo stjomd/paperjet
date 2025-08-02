@@ -3,6 +3,42 @@ use std::path::PathBuf;
 
 use printrs::Printer;
 
+pub mod printers {
+	use super::PrinterSnapshot;
+	use printrs::Printer;
+
+	/// The name of the snapshot file.
+	const SNAPSHOT_FILE_NAME: &str = "printers.snapshot";
+
+	/// Saves a snapshot of the specified printers.
+	pub fn save(printers: &[Printer]) {
+		super::save_all::<_, PrinterSnapshot>(printers, SNAPSHOT_FILE_NAME);
+	}
+	/// Opens the snapshot file and returns its deserialized contents.
+	pub fn open() -> Option<Vec<PrinterSnapshot>> {
+		super::open(SNAPSHOT_FILE_NAME)
+	}
+}
+
+// MARK: - Snapshot types
+
+#[derive(Debug, bincode::Encode, bincode::Decode)]
+/// Data representing snapshot of a printer.
+pub struct PrinterSnapshot {
+	pub human_name: String,
+	pub identifier: String,
+}
+impl From<&Printer> for PrinterSnapshot {
+	fn from(value: &Printer) -> Self {
+		Self {
+			human_name: value.get_human_name().clone(),
+			identifier: value.identifier.clone(),
+		}
+	}
+}
+
+// MARK: - Snapshot Implementation
+
 /// The subdirectory inside the system-specific cache directory.
 const SNAPSHOT_SUBDIR_NAME: &str = concat!("com.github.stjomd.", env!("CARGO_BIN_NAME"));
 
@@ -32,41 +68,7 @@ where
 	bincode::decode_from_std_read(&mut file, bincode::config::standard()).ok()
 }
 
-// MARK: - Snapshot types
-
-#[derive(Debug, bincode::Encode, bincode::Decode)]
-/// Data representing snapshot of a printer.
-pub struct PrinterSnapshot {
-	pub human_name: String,
-	pub identifier: String,
-}
-impl From<&Printer> for PrinterSnapshot {
-	fn from(value: &Printer) -> Self {
-		Self {
-			human_name: value.get_human_name().clone(),
-			identifier: value.identifier.clone(),
-		}
-	}
-}
-
-pub mod printers {
-	use super::PrinterSnapshot;
-	use printrs::Printer;
-
-	/// The name of the snapshot file.
-	const SNAPSHOT_FILE_NAME: &str = "printers.snapshot";
-
-	/// Saves a snapshot of the specified printers.
-	pub fn save(printers: &[Printer]) {
-		super::save_all::<_, PrinterSnapshot>(printers, SNAPSHOT_FILE_NAME);
-	}
-	/// Opens the snapshot file and returns its deserialized contents.
-	pub fn open() -> Option<Vec<PrinterSnapshot>> {
-		super::open(SNAPSHOT_FILE_NAME)
-	}
-}
-
-// MARK: - File System
+// MARK: File System
 
 fn get_snapshot_dir(subdir_name: &str) -> Option<PathBuf> {
 	let mut cache_dir = dirs::cache_dir()?;
