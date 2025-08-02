@@ -30,6 +30,19 @@ pub trait PrintOption {
 	fn to_human_string(&self) -> String;
 }
 
+macro_rules! impl_print_option {
+	($type:ty => $name:expr) => {
+		impl PrintOption for $type {
+			fn get_name() -> &'static str {
+				$name
+			}
+			fn to_human_string(&self) -> String {
+				format!("{self}")
+			}
+		}
+	};
+}
+
 // MARK: - Conrete Options
 
 #[derive(Clone, Copy, Debug)]
@@ -64,14 +77,8 @@ pub enum Finishing {
 	Staple,
 	Trim,
 }
-impl PrintOption for Finishing {
-	fn get_name() -> &'static str {
-		"Finishing"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(Finishing => "Finishing");
+
 impl PrintOption for Vec<Finishing> {
 	fn get_name() -> &'static str {
 		"Finishings"
@@ -106,14 +113,7 @@ pub enum MediaSize {
 	EnvelopeDL,
 	Photo3R,
 }
-impl PrintOption for MediaSize {
-	fn get_name() -> &'static str {
-		"Media Size"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(MediaSize => "Media Size");
 
 #[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
 #[strum(serialize_all = "kebab-case")]
@@ -121,14 +121,7 @@ pub enum MediaSource {
 	Auto,
 	Manual,
 }
-impl PrintOption for MediaSource {
-	fn get_name() -> &'static str {
-		"Media Source"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(MediaSource => "Media Source");
 
 #[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
 #[strum(serialize_all = "kebab-case")]
@@ -143,14 +136,7 @@ pub enum MediaType {
 	Plain,
 	Transparent,
 }
-impl PrintOption for MediaType {
-	fn get_name() -> &'static str {
-		"Media Type"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(MediaType => "Media Type");
 
 #[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
 #[strum(serialize_all = "kebab-case")]
@@ -158,14 +144,7 @@ pub enum Orientation {
 	Portrait,
 	Landscape,
 }
-impl PrintOption for Orientation {
-	fn get_name() -> &'static str {
-		"Orientation"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(Orientation => "Orientation");
 
 #[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
 #[strum(serialize_all = "kebab-case")]
@@ -174,14 +153,7 @@ pub enum ColorMode {
 	Monochrome,
 	Color,
 }
-impl PrintOption for ColorMode {
-	fn get_name() -> &'static str {
-		"Color Mode"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(ColorMode => "Color Mode");
 
 #[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
 #[strum(serialize_all = "kebab-case")]
@@ -190,14 +162,7 @@ pub enum Quality {
 	Normal,
 	High,
 }
-impl PrintOption for Quality {
-	fn get_name() -> &'static str {
-		"Quality"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(Quality => "Quality");
 
 #[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
 #[strum(serialize_all = "kebab-case")]
@@ -206,11 +171,4 @@ pub enum SidesMode {
 	TwoSidedPortrait,
 	TwoSidedLandscape,
 }
-impl PrintOption for SidesMode {
-	fn get_name() -> &'static str {
-		"Sides Mode"
-	}
-	fn to_human_string(&self) -> String {
-		format!("{self}")
-	}
-}
+impl_print_option!(SidesMode => "SidesMode");
