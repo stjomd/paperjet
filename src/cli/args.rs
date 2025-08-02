@@ -114,5 +114,7 @@ impl Args {
 }
 
 fn help_style() -> Styles {
-	Styles::styled().placeholder(AnsiColor::White.on_default().dimmed())
+	Styles::styled()
+		.context(AnsiColor::White.on_default().dimmed())
+		.placeholder(AnsiColor::White.on_default().dimmed())
 }
