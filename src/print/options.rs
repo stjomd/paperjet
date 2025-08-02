@@ -1,10 +1,5 @@
 use std::ffi::c_int;
 
-#[derive(Clone, Copy, Debug)]
-pub struct CopiesInt(pub c_int);
-#[derive(Clone, Copy, Debug)]
-pub struct NumberUpInt(pub c_int);
-
 /// A struct that defines options for a print job.
 #[derive(Clone, Debug, Default)]
 pub struct PrintOptions {
@@ -30,7 +25,37 @@ pub struct PrintOptions {
 	pub sides_mode: Option<SidesMode>,
 }
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+pub trait PrintOption {
+	fn get_name() -> &'static str;
+	fn to_human_string(&self) -> String;
+}
+
+// MARK: - Conrete Options
+
+#[derive(Clone, Copy, Debug)]
+pub struct CopiesInt(pub c_int);
+impl PrintOption for CopiesInt {
+	fn get_name() -> &'static str {
+		"Copies"
+	}
+	fn to_human_string(&self) -> String {
+		self.0.to_string()
+	}
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct NumberUpInt(pub c_int);
+impl PrintOption for NumberUpInt {
+	fn get_name() -> &'static str {
+		"Number Up"
+	}
+	fn to_human_string(&self) -> String {
+		self.0.to_string()
+	}
+}
+
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum Finishing {
 	Bind,
 	Cover,
@@ -39,8 +64,28 @@ pub enum Finishing {
 	Staple,
 	Trim,
 }
+impl PrintOption for Finishing {
+	fn get_name() -> &'static str {
+		"Finishing"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
+}
+impl PrintOption for Vec<Finishing> {
+	fn get_name() -> &'static str {
+		"Finishings"
+	}
+	fn to_human_string(&self) -> String {
+		self.iter()
+			.map(|f| f.to_human_string())
+			.collect::<Vec<_>>()
+			.join(", ")
+	}
+}
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum MediaSize {
 	// ISO & A3+
 	A3,
@@ -61,14 +106,32 @@ pub enum MediaSize {
 	EnvelopeDL,
 	Photo3R,
 }
+impl PrintOption for MediaSize {
+	fn get_name() -> &'static str {
+		"Media Size"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
+}
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum MediaSource {
 	Auto,
 	Manual,
 }
+impl PrintOption for MediaSource {
+	fn get_name() -> &'static str {
+		"Media Source"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
+}
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum MediaType {
 	Auto,
 	Envelope,
@@ -80,30 +143,74 @@ pub enum MediaType {
 	Plain,
 	Transparent,
 }
+impl PrintOption for MediaType {
+	fn get_name() -> &'static str {
+		"Media Type"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
+}
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum Orientation {
 	Portrait,
 	Landscape,
 }
+impl PrintOption for Orientation {
+	fn get_name() -> &'static str {
+		"Orientation"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
+}
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum ColorMode {
 	Auto,
 	Monochrome,
 	Color,
 }
+impl PrintOption for ColorMode {
+	fn get_name() -> &'static str {
+		"Color Mode"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
+}
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum Quality {
 	Draft,
 	Normal,
 	High,
 }
+impl PrintOption for Quality {
+	fn get_name() -> &'static str {
+		"Quality"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
+}
 
-#[derive(Clone, Debug, clap::ValueEnum)]
+#[derive(Clone, Debug, clap::ValueEnum, strum::Display)]
+#[strum(serialize_all = "kebab-case")]
 pub enum SidesMode {
 	OneSided,
 	TwoSidedPortrait,
 	TwoSidedLandscape,
+}
+impl PrintOption for SidesMode {
+	fn get_name() -> &'static str {
+		"Sides Mode"
+	}
+	fn to_human_string(&self) -> String {
+		format!("{self}")
+	}
 }

@@ -86,7 +86,7 @@ impl Drop for CupsOptions {
 // MARK: - CupsOption trait
 
 /// A trait that designates an option that can be converted to a CUPS option value string.
-pub trait CupsOption {
+pub trait CupsOption: PrintOption {
 	/// Converts the option's type to a name accepted by CUPS.
 	/// Returns a borrowed C string.
 	fn get_cups_option_name() -> &'static CStr;

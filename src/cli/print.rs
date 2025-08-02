@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use printrs::error::PrintError;
+use printrs::options::PrintOptions;
 
 use crate::cli::args::PrintArgs;
 
@@ -12,5 +13,6 @@ pub fn print(args: PrintArgs) -> Result<(), PrintError> {
 		.map(File::open)
 		.collect::<Result<_, _>>()?;
 
-	printrs::print(files).inspect(|_| println!("Files have been submitted for printing."))
+	let options = PrintOptions::from(args);
+	printrs::print(files, options).inspect(|_| println!("Files have been submitted for printing."))
 }

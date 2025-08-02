@@ -15,7 +15,7 @@ pub enum PrintError {
 	StringConversion(#[from] std::ffi::NulError),
 
 	/// An error that indicates that an option validation with the printer failed.
-	#[error("option is unsupported: {name} = {value}")]
+	#[error("printer does not support option: {name} = {value}")]
 	UnsupportedOption { name: String, value: String },
 
 	/// An error reported by the backend API (for example, CUPS on Unix systems).

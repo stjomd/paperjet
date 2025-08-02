@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io;
 
 use crate::error::PrintError;
+use crate::options::PrintOptions;
 
 // MARK: - Public API Methods
 
@@ -12,12 +13,12 @@ pub fn get_printers() -> Vec<Printer> {
 }
 
 /// Prints the contents of each of the specified [`readers`].
-pub fn print<I, R>(readers: I) -> Result<(), PrintError>
+pub fn print<I, R>(readers: I, options: PrintOptions) -> Result<(), PrintError>
 where
 	I: IntoIterator<Item = R>,
 	R: io::Read,
 {
-	PlatformSpecificApi::print(readers)
+	PlatformSpecificApi::print(readers, options)
 }
 
 // MARK: - Public API trait
@@ -31,7 +32,7 @@ pub trait CrossPlatformApi {
 	/// See [`crate::print::get_printers()`].
 	fn get_printers() -> Vec<Printer>;
 	/// See [`crate::print::print()`].
-	fn print<I, R>(readers: I) -> Result<(), PrintError>
+	fn print<I, R>(readers: I, options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
 		R: io::Read;
