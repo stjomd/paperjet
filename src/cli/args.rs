@@ -1,3 +1,5 @@
+use clap::builder::Styles;
+use clap::builder::styling::AnsiColor;
 use clap::{ArgAction, Parser, Subcommand};
 use printrs::options::{
 	ColorMode, Finishing, MediaSize, MediaSource, MediaType, Orientation, Quality, SidesMode,
@@ -5,14 +7,27 @@ use printrs::options::{
 use std::ffi::c_int;
 use std::path::PathBuf;
 
+mod headings {
+	pub const MISC: &str = "Miscellaneous";
+}
+
 #[derive(Parser)]
-#[command(version, disable_version_flag = true)]
+#[command(version, disable_version_flag = true, disable_help_flag = true, styles = help_style())]
 pub struct Args {
 	#[command(subcommand)]
 	pub command: Command,
-	/// Print version
-	#[arg(long, action = ArgAction::Version)]
+
+	/// Output more information to the console.
+	#[arg(short, long, global = true, help_heading = headings::MISC)]
+	pub verbose: bool,
+
+	/// Print version.
+	#[arg(long, action = ArgAction::Version, help_heading = headings::MISC)]
 	pub version: Option<bool>,
+
+	/// Print help.
+	#[arg(short, long, global = true, action = ArgAction::Help, help_heading = headings::MISC)]
+	pub help: Option<bool>,
 }
 
 #[derive(Subcommand)]
@@ -96,4 +111,8 @@ impl Args {
 	pub fn parse() -> Self {
 		<Self as Parser>::parse()
 	}
+}
+
+fn help_style() -> Styles {
+	Styles::styled().placeholder(AnsiColor::White.on_default().dimmed())
 }
