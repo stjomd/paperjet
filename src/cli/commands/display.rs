@@ -11,7 +11,7 @@ type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
 pub fn display(args: DisplayArgs) -> Result<(), CliError> {
-	let printer = common::get_printer_by_id(args.id).ok_or(CliError::PrinterNotFound(args.id))?;
+	let printer = common::get_printer_by_id(args.id).ok_or(CliError::PrinterNotFoundById(args.id))?;
 	println!("{}\n", printer.get_human_name().bold());
 
 	let info = collect_information(&printer);

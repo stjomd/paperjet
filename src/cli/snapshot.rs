@@ -10,7 +10,7 @@ pub mod printers {
 	/// The name of the snapshot file.
 	const SNAPSHOT_FILE_NAME: &str = "printers.snapshot";
 
-	/// Saves a snapshot of the specified printers.
+	/// Saves a snapshot of the specified, sorted, printers.
 	pub fn save(printers: &[Printer]) {
 		super::save_all::<_, PrinterSnapshot>(printers, SNAPSHOT_FILE_NAME);
 	}

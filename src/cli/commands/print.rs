@@ -16,9 +16,13 @@ pub fn print(args: PrintArgs) -> Result<(), CliError> {
 		.map(map_path_to_file_result)
 		.collect::<Result<_, _>>()?;
 
-	let printer = match args.printer_id {
-		Some(id) => common::get_printer_by_id(id).ok_or(CliError::PrinterNotFound(id))?,
-		None => printrs::get_default_printer().ok_or(PrintError::NoPrinters)?,
+	let printer = if let Some(id) = args.printer_id {
+		common::get_printer_by_id(id).ok_or(CliError::PrinterNotFoundById(id))?
+	} else if let Some(ref name) = args.printer_name {
+		common::get_printer_by_name(name)
+			.ok_or_else(|| CliError::PrinterNotFoundByName(name.clone()))?
+	} else {
+		printrs::get_default_printer().ok_or(PrintError::NoPrinters)?
 	};
 
 	let options = PrintOptions::from(args);

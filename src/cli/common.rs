@@ -25,22 +25,40 @@ pub fn get_printer_by_id(id: usize) -> Option<Printer> {
 		return None; // `list` counts from 1
 	}
 	let index = id - 1;
-	get_printer_from_snapshot(index).or_else(|| get_printer_from_api_list(index))
+	get_printer_by_id_from_snapshot(index).or_else(|| get_printer_by_id_from_api(index))
 }
-
 /// Retrieves the printer at the specified index in the snapshot, if present.
-fn get_printer_from_snapshot(index: usize) -> Option<Printer> {
+fn get_printer_by_id_from_snapshot(index: usize) -> Option<Printer> {
 	let snapshot = snapshot::printers::open()?;
 	let entry = snapshot.get(index)?;
 	printrs::get_printer(&entry.identifier)
 }
-
 /// Retrieves all printers from backend, then returns the printer with the specified index,
 /// if present.
-fn get_printer_from_api_list(index: usize) -> Option<Printer> {
+fn get_printer_by_id_from_api(index: usize) -> Option<Printer> {
 	let printers = get_sorted_printers();
 	snapshot::printers::save(&printers);
 	printers.into_iter().nth(index)
+}
+
+/// Retrieves the printer corresponding to the specified `name`.
+/// The name is matched against the printer's identifier, name, and human-friendly name.
+pub fn get_printer_by_name(name: &str) -> Option<Printer> {
+	get_printer_by_name_from_snapshot(name).or_else(|| get_printer_by_name_from_api(name))
+}
+/// Retrieves the printer corresponding to the specified `name` from the snapshot.
+fn get_printer_by_name_from_snapshot(name: &str) -> Option<Printer> {
+	let snapshot = snapshot::printers::open()?;
+	let entry = snapshot.iter().find(|snap| snap.identifier == name);
+	let entry = entry.or_else(|| snapshot.iter().find(|snap| snap.human_name == name))?;
+	printrs::get_printer(&entry.identifier)
+}
+// Retrieves the printer corresponding to the specified `name` from the API.
+fn get_printer_by_name_from_api(name: &str) -> Option<Printer> {
+	let printers = printrs::get_printers();
+	printers
+		.into_iter()
+		.find(|p| p.identifier == name || p.name == name || p.get_human_name() == name)
 }
 
 impl From<PrintArgs> for PrintOptions {

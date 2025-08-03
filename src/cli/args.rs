@@ -19,10 +19,9 @@ pub struct Args {
 	#[command(subcommand)]
 	pub command: Command,
 
-	/// Output more information to the console.
-	#[arg(short, long, global = true, help_heading = headings::MISC)]
-	pub verbose: bool,
-
+	// /// Output more information to the console.
+	// #[arg(short, long, global = true, help_heading = headings::MISC)]
+	// pub verbose: bool,
 	/// Print version.
 	#[arg(long, action = ArgAction::Version, help_heading = headings::MISC)]
 	pub version: Option<bool>,
@@ -66,12 +65,18 @@ pub struct PrintArgs {
 	#[arg(value_name = "files", required = true, num_args = 1..)]
 	pub paths: Vec<PathBuf>,
 
-	/// The ID of the printer that should print the files.
+	/// The ID of the printer that should print the files, as per the `list` command.
 	///
 	/// The ID refers to the position in the list output by the `list` command.
 	/// If not specified, the default printer is used.
-	#[arg(short, long, value_name = "ID", help_heading = headings::DEVICES)]
+	#[arg(short, long, value_name = "ID", group = "printer", help_heading = headings::DEVICES)]
 	pub printer_id: Option<usize>,
+
+	/// The name of the printer that should print the files.
+	///
+	/// Use the `list` command to get a list of available printers and their names.
+	#[arg(long, value_name = "NAME", group = "printer", help_heading = headings::DEVICES)]
+	pub printer_name: Option<String>,
 
 	/// Amount of copies [default: 1]
 	///
