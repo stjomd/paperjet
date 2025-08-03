@@ -49,8 +49,8 @@ pub enum Command {
 
 #[derive(clap::Args)]
 pub struct DisplayArgs {
-	/// The ID of the printer (as determined by the `list` command).
-	pub id: usize,
+	/// The ID (as determined by the `list` command) or the name of the printer.
+	pub criteria: String,
 	/// Display all options of the printer.
 	#[arg(short, long)]
 	pub options: bool,

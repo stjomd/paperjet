@@ -11,7 +11,7 @@ type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
 pub fn display(args: DisplayArgs) -> Result<(), CliError> {
-	let printer = common::get_printer_by_id(args.id).ok_or(CliError::PrinterNotFoundById(args.id))?;
+	let printer = get_printer_by_criteria(&args.criteria)?;
 	println!("{}\n", printer.get_human_name().bold());
 
 	let info = collect_information(&printer);
@@ -24,6 +24,18 @@ pub fn display(args: DisplayArgs) -> Result<(), CliError> {
 		print_key_value_pairs(&options);
 	}
 	Ok(())
+}
+
+/// Retrieves the printer by specified criteria, which is either the numerical ID or a name.
+fn get_printer_by_criteria(criteria: &str) -> Result<Printer, CliError> {
+	let mut printer = None;
+	if let Ok(id) = criteria.parse::<usize>() {
+		printer = common::get_printer_by_id(id);
+	};
+	if printer.is_none() {
+		printer = common::get_printer_by_name(criteria);
+	}
+	printer.ok_or_else(|| CliError::PrinterNotFound(criteria.to_owned()))
 }
 
 /// Collects basic printer information into a map.
