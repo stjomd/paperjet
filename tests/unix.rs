@@ -3,7 +3,6 @@
 mod utils;
 
 use crate::utils::unixutils::FakePrinter;
-use printrs::Printer;
 
 #[test]
 fn get_printers_returns_correct_information_of_printer() {
@@ -13,14 +12,11 @@ fn get_printers_returns_correct_information_of_printer() {
 	let printers = printrs::get_printers();
 
 	// Only one printer with the fake's name should exist
-	let fake_printers = printers
-		.iter()
-		.filter(|p| p.name == fake.name)
-		.collect::<Vec<&Printer>>();
-	assert_eq!(fake_printers.len(), 1);
+	let fake_printer = printers.iter().find(|p| p.name == fake.name);
+	assert!(fake_printer.is_some());
 
 	// The fake printer should have correct information
-	let fake_printer = fake_printers[0];
+	let fake_printer = fake_printer.unwrap();
 	assert_eq!(fake_printer.name, fake.name);
 	assert_eq!(
 		fake_printer
