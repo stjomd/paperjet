@@ -42,7 +42,10 @@ fn get_printer_by_id_from_api(index: usize) -> Option<Printer> {
 }
 
 /// Retrieves the printer corresponding to the specified `name`.
+///
 /// The name is matched against the printer's identifier, name, and human-friendly name.
+/// Identifier matching is case sensitive, while name and human-friendly name are matched
+/// case-insensitively.
 pub fn get_printer_by_name(name: &str) -> Option<Printer> {
 	get_printer_by_name_from_snapshot(name).or_else(|| get_printer_by_name_from_api(name))
 }
@@ -50,15 +53,21 @@ pub fn get_printer_by_name(name: &str) -> Option<Printer> {
 fn get_printer_by_name_from_snapshot(name: &str) -> Option<Printer> {
 	let snapshot = snapshot::printers::open()?;
 	let entry = snapshot.iter().find(|snap| snap.identifier == name);
-	let entry = entry.or_else(|| snapshot.iter().find(|snap| snap.human_name == name))?;
+	let entry = entry.or_else(|| {
+		snapshot
+			.iter()
+			.find(|snap| snap.human_name.to_lowercase() == name.to_lowercase())
+	})?;
 	printrs::get_printer(&entry.identifier)
 }
 // Retrieves the printer corresponding to the specified `name` from the API.
 fn get_printer_by_name_from_api(name: &str) -> Option<Printer> {
 	let printers = printrs::get_printers();
-	printers
-		.into_iter()
-		.find(|p| p.identifier == name || p.name == name || p.get_human_name() == name)
+	printers.into_iter().find(|p| {
+		p.identifier == name
+			|| p.name.to_lowercase() == name.to_lowercase()
+			|| p.get_human_name().to_lowercase() == name.to_lowercase()
+	})
 }
 
 impl From<PrintArgs> for PrintOptions {
