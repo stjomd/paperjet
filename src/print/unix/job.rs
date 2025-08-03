@@ -98,7 +98,7 @@ impl<'a> Drop for CupsJob<'a> {
 	fn drop(&mut self) {
 		if self.cancel_on_drop {
 			let _ = cancel_job(self.id, &mut self.context)
-				.inspect_err(|e| eprintln!("could not cancel job during drop: {e}"));
+				.inspect_err(|e| eprintln!("could not cancel job {} during drop: {}", self.id, e));
 		}
 	}
 }
