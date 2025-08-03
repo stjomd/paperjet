@@ -10,14 +10,16 @@ pub struct FakePrinter {
 
 impl FakePrinter {
 	/// Creates a new printer in the system with a random name and a URI to `/dev/null`.
-	pub fn try_new() -> Result<Self, std::io::Error> {
+	pub fn try_new(accept_jobs: bool) -> Result<Self, std::io::Error> {
 		let name = "printrs-test-".to_owned() + &uuid::Uuid::new_v4().to_string();
 		let device_uri = "file:/dev/null".to_owned();
-		lpadmin()
-			.args(["-p", &name])
-			.args(["-v", &device_uri])
-			.arg("-E")
-			.output()?;
+
+		let mut args = vec!["-p", &name, "-v", &device_uri];
+		if accept_jobs {
+			args.push("-E");
+		}
+
+		lpadmin().args(args).output()?;
 		eprintln!("Created fake printer {name}");
 		Ok(Self { name, device_uri })
 	}
