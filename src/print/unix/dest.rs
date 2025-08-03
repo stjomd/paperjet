@@ -49,7 +49,7 @@ impl Drop for CupsDestinations {
 		if self.0.is_null() {
 			return;
 		}
-		// SAFETY: `self.dests` is a valid fat pointer, pointing to memory allocated by CUPS.
+		// SAFETY: `self.0` is a valid fat pointer, pointing to memory allocated by CUPS.
 		// It remains valid until `cupsFreeDests` is called, which is now.
 		unsafe { cups::cupsFreeDests(self.0.size, self.0.ptr) };
 		// Seems like we don't have to drop the options on each destination ourselves (causes
@@ -63,7 +63,8 @@ impl<'a> IntoIterator for &'a mut CupsDestinations {
 		fn(&'a mut cups::cups_dest_t) -> CupsDestination<'a>,
 	>;
 	fn into_iter(self) -> Self::IntoIter {
-		// SAFETY:
+		// SAFETY: `self.0` is a valid fat pointer pointing to an array of destinations, allocated
+		// by CUPS, and remains valid until `cupsFreeDests` is called, which happens on drop.
 		unsafe {
 			let slice = self.0.as_slice_mut();
 			slice.iter_mut().map(|refr| CupsDestination::new(refr))

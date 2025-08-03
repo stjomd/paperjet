@@ -114,8 +114,10 @@ fn create_job(title: &str, context: &mut JobContext) -> Result<ffi::c_int, Print
 	let title = ffi::CString::new(title)?;
 	let mut job_id = 0;
 
-	unsafe {
-		let status = cups::cupsCreateDestJob(
+	// SAFETY: `context` contains safe wrappers over CUPS bindings (and `http`, which can be a null
+	// pointer), thus all pointers passed into `cupsCreateDestJob` are valid.
+	let status = unsafe {
+		cups::cupsCreateDestJob(
 			context.http,
 			context.destination.deref_mut(),
 			context.info.deref_mut(),
@@ -123,10 +125,10 @@ fn create_job(title: &str, context: &mut JobContext) -> Result<ffi::c_int, Print
 			title.as_ptr(),
 			context.options.as_fat_ptr_mut().size,
 			context.options.as_fat_ptr_mut().ptr,
-		);
-		if status != cups::ipp_status_e::IPP_STATUS_OK {
-			return Err(get_last_error());
-		}
+		)
+	};
+	if status != cups::ipp_status_e::IPP_STATUS_OK {
+		return Err(get_last_error());
 	}
 
 	Ok(job_id)
@@ -139,8 +141,10 @@ fn start_upload(
 	context: &mut JobContext,
 ) -> Result<(), PrintError> {
 	let filename = ffi::CString::new(file_name.as_bytes())?;
-	unsafe {
-		let status = cups::cupsStartDestDocument(
+	// SAFETY: `context` contains safe wrappers over CUPS bindings (and http, which can be a null
+	// pointer), thus all pointers passed into `cupsStartDestDocument` are valid.
+	let status = unsafe {
+		cups::cupsStartDestDocument(
 			context.http,
 			context.destination.deref_mut(),
 			context.info.deref_mut(),
@@ -150,11 +154,12 @@ fn start_upload(
 			context.options.as_fat_ptr_mut().size,
 			context.options.as_fat_ptr_mut().ptr,
 			cups::consts::bool(false), // we always pass `false` here & start printing with closeDestJob
-		);
-		if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
-			return Err(get_last_error());
-		}
+		)
+	};
+	if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
+		return Err(get_last_error());
 	}
+
 	Ok(())
 }
 
@@ -170,17 +175,18 @@ where
 	loop {
 		let buf = reader.fill_buf()?;
 		let buf_len = buf.len();
-
 		if buf_len == 0 {
 			break;
 		}
-		unsafe {
-			let status =
-				cups::cupsWriteRequestData(context.http, buf.as_ptr() as *const _, buf_len);
-			if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
-				return Err(get_last_error());
-			}
+
+		// SAFETY: `http` can be any pointer, `buf` is the just readed into buffer and `buf_len` its
+		// length, thus `cupsWriteRequestData` arguments are correct.
+		let status =
+			unsafe { cups::cupsWriteRequestData(context.http, buf.as_ptr() as *const _, buf_len) };
+		if status != cups::http_status_e::HTTP_STATUS_CONTINUE {
+			return Err(get_last_error());
 		}
+
 		reader.consume(buf_len);
 	}
 
@@ -189,21 +195,25 @@ where
 
 /// Signals that the file transfer has finished.
 fn finish_upload(context: &mut JobContext) -> Result<(), PrintError> {
-	unsafe {
-		let status = cups::cupsFinishDestDocument(
+	// SAFETY: `context` contains safe wrappers over CUPS bindings (and `http`, which can be a null
+	// pointer), and thus all pointers passed into `cupsFinishDestDocument` are safe.
+	let status = unsafe {
+		cups::cupsFinishDestDocument(
 			context.http,
 			context.destination.deref_mut(),
 			context.info.deref_mut(),
-		);
-		if status != cups::ipp_status_e::IPP_STATUS_OK {
-			return Err(get_last_error());
-		}
+		)
+	};
+	if status != cups::ipp_status_e::IPP_STATUS_OK {
+		return Err(get_last_error());
 	}
 	Ok(())
 }
 
 /// Cancels the job with the specified ID.
 fn cancel_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintError> {
+	// SAFETY: `context` contains safe wrappers over CUPS bindings (and `http`, which can be a null
+	// pointer), and thus all pointers passed into `cupsCancelDestJob` are safe.
 	let status =
 		unsafe { cups::cupsCancelDestJob(context.http, context.destination.deref_mut(), job_id) };
 	if status != cups::ipp_status_e::IPP_STATUS_OK {
@@ -214,6 +224,8 @@ fn cancel_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintE
 
 /// Closes the job with the specified ID and starts printing.
 fn close_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintError> {
+	// SAFETY: `context` contains safe wrappers over CUPS bindings (and `http`, which can be a null
+	// pointer), and thus all pointers passed into `cupsCloseDestJob` are safe.
 	let status = unsafe {
 		cups::cupsCloseDestJob(
 			context.http,
@@ -231,6 +243,7 @@ fn close_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintEr
 /// Retrieves the last error string from CUPS and constructs a [`PrintError::Backend`].
 /// If no error string is returned by CUPS, an empty error string is used.
 fn get_last_error() -> PrintError {
+	// SAFETY: `cupsLastErrorString` accepts no arguments.
 	let message = unsafe {
 		let ptr = cups::cupsLastErrorString();
 		if !ptr.is_null() {
