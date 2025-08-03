@@ -35,6 +35,7 @@ pub fn print(args: PrintArgs) -> Result<()> {
 	Ok(())
 }
 
+/// Opens the file at the specified path and returns it.
 fn map_path_to_file_result(path: &PathBuf) -> Result<File> {
 	File::open(path).map_err(|e| {
 		anyhow!(

@@ -84,6 +84,10 @@ fn check_is_valid(file: &File, max_age: Duration) -> Result<bool> {
 	Ok(diff == Duration::ZERO)
 }
 
+/// Returns the snapshot directory.
+///
+/// If not present, an attempt will be made to create a new directory.
+/// If even that fails, returns [`Option::None`].
 fn get_snapshot_dir(subdir_name: &str) -> Option<PathBuf> {
 	let mut cache_dir = dirs::cache_dir()?;
 	cache_dir.push(subdir_name);
