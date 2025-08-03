@@ -1,11 +1,11 @@
+use anyhow::Result;
 use colored::Colorize;
 
 use crate::cli::common::get_sorted_printers;
-use crate::cli::error::CliError;
 use crate::cli::snapshot;
 
 /// The `list` command.
-pub fn list() -> Result<(), CliError> {
+pub fn list() -> Result<()> {
 	let printers = get_sorted_printers();
 	for (i, printer) in printers.iter().enumerate() {
 		let index = i + 1;

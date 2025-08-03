@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
+use anyhow::{Result, anyhow};
 use colored::Colorize;
 use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
 use crate::cli::common;
-use crate::cli::error::CliError;
 
 type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
-pub fn display(args: DisplayArgs) -> Result<(), CliError> {
+pub fn display(args: DisplayArgs) -> Result<()> {
 	let printer = get_printer_by_criteria(&args.criteria)?;
 	println!("{}\n", printer.get_human_name().bold());
 
@@ -27,7 +27,7 @@ pub fn display(args: DisplayArgs) -> Result<(), CliError> {
 }
 
 /// Retrieves the printer by specified criteria, which is either the numerical ID or a name.
-fn get_printer_by_criteria(criteria: &str) -> Result<Printer, CliError> {
+fn get_printer_by_criteria(criteria: &str) -> Result<Printer> {
 	let mut printer = None;
 	if let Ok(id) = criteria.parse::<usize>() {
 		printer = common::get_printer_by_id(id);
@@ -35,7 +35,12 @@ fn get_printer_by_criteria(criteria: &str) -> Result<Printer, CliError> {
 	if printer.is_none() {
 		printer = common::get_printer_by_name(criteria);
 	}
-	printer.ok_or_else(|| CliError::PrinterNotFound(criteria.to_owned()))
+	printer.ok_or_else(|| {
+		anyhow!(
+			"could not find a printer by criteria: '{}'",
+			criteria.yellow()
+		)
+	})
 }
 
 /// Collects basic printer information into a map.

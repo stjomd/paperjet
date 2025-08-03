@@ -1,15 +1,16 @@
 use std::fs::File;
 use std::path::PathBuf;
 
+use anyhow::{Result, anyhow};
+use colored::Colorize;
 use printrs::error::PrintError;
 use printrs::options::PrintOptions;
 
 use crate::cli::args::PrintArgs;
 use crate::cli::common;
-use crate::cli::error::CliError;
 
 /// The `print` command
-pub fn print(args: PrintArgs) -> Result<(), CliError> {
+pub fn print(args: PrintArgs) -> Result<()> {
 	let files: Vec<File> = args
 		.paths
 		.iter()
@@ -17,10 +18,13 @@ pub fn print(args: PrintArgs) -> Result<(), CliError> {
 		.collect::<Result<_, _>>()?;
 
 	let printer = if let Some(id) = args.printer_id {
-		common::get_printer_by_id(id).ok_or(CliError::PrinterNotFoundById(id))?
+		common::get_printer_by_id(id).ok_or(anyhow!(
+			"could not find a printer by the ID: '{}'",
+			id.to_string().yellow()
+		))?
 	} else if let Some(ref name) = args.printer_name {
 		common::get_printer_by_name(name)
-			.ok_or_else(|| CliError::PrinterNotFoundByName(name.clone()))?
+			.ok_or_else(|| anyhow!("could not find a printer by the name: '{}'", name.yellow()))?
 	} else {
 		printrs::get_default_printer().ok_or(PrintError::NoPrinters)?
 	};
@@ -31,9 +35,12 @@ pub fn print(args: PrintArgs) -> Result<(), CliError> {
 	Ok(())
 }
 
-fn map_path_to_file_result(path: &PathBuf) -> Result<File, CliError> {
-	File::open(path).map_err(|e| CliError::FileError {
-		path: path.clone(),
-		source: e,
+fn map_path_to_file_result(path: &PathBuf) -> Result<File> {
+	File::open(path).map_err(|e| {
+		anyhow!(
+			"could not open file '{}': {}",
+			path.display().to_string().yellow(),
+			e
+		)
 	})
 }
