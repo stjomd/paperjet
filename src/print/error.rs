@@ -18,6 +18,10 @@ pub enum PrintError {
 	#[error("could not convert to C string: {0}")]
 	StringConversion(#[from] std::ffi::NulError),
 
+	/// An error indicating that necessary information for a process could not be retrieved.
+	#[error("could not retrieve necessary information: {0}")]
+	NecessaryInformationMissing(String),
+
 	/// An error that indicates that an option validation with the printer failed.
 	#[error("printer does not support option: {name} = {value}")]
 	UnsupportedOption { name: String, value: String },

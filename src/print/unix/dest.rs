@@ -10,11 +10,8 @@ use crate::print::unix::cups;
 // It is IMPORTANT that these structs do not rely on caller input during initialization if
 // performing unsafe operations. They also MUST NOT mutably expose their contents.
 //
-// These wrappers are chained:
-// 		- CupsDestinations<'a> contains any number of CupsDestination<'a>
-//		- CupsDestination<'a> contains CupsDestinationInfo<'a>
-// The lifetimes are passed down, so that a child instance lives no longer than its parent, if any.
-// This is due to the fact that the memory these structs reference is related.
+// CupsDestinations<'a> 'contains' any number of CupsDestination<'a>, passing down the lifetime,
+// so that a CupsDestination doesn't outlive its parent CupsDestinations.
 //
 // These structs MUST only expose safe constructors that do not accept references or pointers.
 
@@ -40,11 +37,11 @@ impl CupsDestinations {
 	pub fn get(&mut self, index: usize) -> Option<CupsDestination> {
 		// SAFETY: `self.0` is a valid fat pointer, pointing to memory allocated by CUPS.
 		// It remains valid until `cupsFreeDests` is called, which happens on drop.
-		let reference_dest = unsafe {
+		unsafe {
 			let ptr = self.0.get_at(index)?;
-			&mut *ptr
-		};
-		Some(CupsDestination::new(reference_dest))
+			let reference = &mut *ptr;
+			Some(CupsDestination::new(reference))
+		}
 	}
 }
 impl Drop for CupsDestinations {
@@ -66,19 +63,24 @@ impl<'a> IntoIterator for &'a mut CupsDestinations {
 		fn(&'a mut cups::cups_dest_t) -> CupsDestination<'a>,
 	>;
 	fn into_iter(self) -> Self::IntoIter {
-		let slice = unsafe { self.0.as_slice_mut() };
-		slice.iter_mut().map(CupsDestination::new)
+		// SAFETY:
+		unsafe {
+			let slice = self.0.as_slice_mut();
+			slice.iter_mut().map(|refr| CupsDestination::new(refr))
+		}
 	}
 }
 
 // MARK: - Destination
 
-pub struct CupsDestination<'a>(&'a mut cups::cups_dest_t, CupsDestinationInfo<'a>);
+pub struct CupsDestination<'a>(&'a mut cups::cups_dest_t);
 impl<'a> CupsDestination<'a> {
 	/// Wraps a valid destination in this struct.
-	fn new(dest: &'a mut cups::cups_dest_t) -> Self {
-		let info = CupsDestinationInfo::new(dest);
-		Self(dest, info)
+	///
+	/// # Safety
+	/// `dest` must be a valid reference pointing to a [`cups::cups_dest_t`] managed by CUPS.
+	unsafe fn new(dest: &'a mut cups::cups_dest_t) -> Self {
+		Self(dest)
 	}
 	/// Retrieves a destination by its name.
 	pub fn new_by_name(name: &CStr) -> Option<Self> {
@@ -97,8 +99,10 @@ impl<'a> CupsDestination<'a> {
 			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
 			// a null pointer, and the null pointer has been checked in the previous branch,
 			// therefore this is a valid pointer and can be safely casted to a reference.
-			let reference = unsafe { &mut *dest };
-			Some(Self::new(reference))
+			unsafe {
+				let reference = &mut *dest;
+				Some(Self::new(reference))
+			}
 		}
 	}
 	/// Retrieves the default destination.
@@ -119,13 +123,11 @@ impl<'a> CupsDestination<'a> {
 			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
 			// a null pointer, and the null pointer has been checked in the previous branch,
 			// therefore this is a valid pointer and can be safely casted to a reference.
-			let reference = unsafe { &mut *dest };
-			Some(Self::new(reference))
+			unsafe {
+				let reference = &mut *dest;
+				Some(Self::new(reference))
+			}
 		}
-	}
-	/// Returns this destination's information.
-	pub fn get_info(&mut self) -> &mut CupsDestinationInfo<'a> {
-		&mut self.1
 	}
 }
 impl<'a> Deref for CupsDestination<'a> {
@@ -145,12 +147,22 @@ impl<'a> DerefMut for CupsDestination<'a> {
 /// A struct representing CUPS information for a particular destination.
 pub struct CupsDestinationInfo<'a>(&'a mut cups::cups_dinfo_t);
 impl<'a> CupsDestinationInfo<'a> {
-	fn new(destination: &mut cups::cups_dest_t) -> Self {
-		let reference = unsafe {
-			let ptr = cups::cupsCopyDestInfo(cups::consts::http::CUPS_HTTP_DEFAULT, destination);
-			&mut *ptr
+	/// Retrieves destination info from CUPS and wraps the pointer in this struct.
+	pub fn new(destination: &mut CupsDestination) -> Option<Self> {
+		// SAFETY: `destination` is wrapped in CupsDestination, and thus contains a valid reference.
+		let ptr = unsafe {
+			cups::cupsCopyDestInfo(
+				cups::consts::http::CUPS_HTTP_DEFAULT,
+				destination.deref_mut(),
+			)
 		};
-		CupsDestinationInfo(reference)
+		if ptr.is_null() {
+			return None;
+		}
+		// SAFETY: `cupsCopyDestInfo` might return a null pointer, which was checked above.
+		// Thus at this point, the pointer is valid, and can be casted to a reference.
+		let reference = unsafe { &mut *ptr };
+		Some(CupsDestinationInfo(reference))
 	}
 }
 impl<'a> Drop for CupsDestinationInfo<'a> {

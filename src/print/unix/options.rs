@@ -7,7 +7,7 @@ use crate::options::*;
 use crate::print::unix::FatPointerMut;
 use crate::print::unix::cups;
 use crate::print::unix::cups::consts::opts;
-use crate::print::unix::dest::CupsDestination;
+use crate::print::unix::dest::{CupsDestination, CupsDestinationInfo};
 
 // MARK: - Cups Options Struct
 
@@ -46,7 +46,12 @@ impl CupsOptions {
 		};
 	}
 	/// Checks with a particular destination whether the option and its value are supported.
-	pub fn validate<O>(&self, destination: &mut CupsDestination, option: &O) -> bool
+	pub fn validate<O>(
+		&self,
+		destination: &mut CupsDestination,
+		info: &mut CupsDestinationInfo,
+		option: &O,
+	) -> bool
 	where
 		O: CupsOption,
 	{
@@ -56,13 +61,14 @@ impl CupsOptions {
 			cups::cupsCheckDestSupported(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
 				destination.deref_mut(),
-				destination.get_info().deref_mut(),
+				info.deref_mut(),
 				O::get_cups_option_name().as_ptr(),
 				option.get_cups_option_value().as_ptr(),
 			)
 		};
 		result == cups::consts::bool(true)
 	}
+
 	/// Converts this options list into a fat pointer, containing a pointer to the first element,
 	/// as well as a valid size.
 	///

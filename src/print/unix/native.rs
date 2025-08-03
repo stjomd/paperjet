@@ -4,7 +4,7 @@ use std::slice;
 
 use crate::error::PrintError;
 use crate::options::PrintOptions;
-use crate::print::unix::dest::{CupsDestination, CupsDestinations};
+use crate::print::unix::dest::{CupsDestination, CupsDestinationInfo, CupsDestinations};
 use crate::print::unix::job::CupsJob;
 use crate::print::unix::options::{CupsOption, CupsOptions};
 use crate::print::unix::{cstr_to_string, cups};
@@ -36,30 +36,34 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		let mut cups_dest = CupsDestination::new_by_name(&id)
 			.ok_or(PrintError::PrinterNotFound(printer.identifier))?;
 
-		let cups_opts = add_options(options, &mut cups_dest)?;
-		let mut job = CupsJob::try_new("printrs", cups_dest, cups_opts)?;
+		let mut cups_info = CupsDestinationInfo::new(&mut cups_dest).ok_or(
+			PrintError::NecessaryInformationMissing(String::from("no CUPS destination info")),
+		)?;
+		let cups_opts = add_options(options, &mut cups_dest, &mut cups_info)?;
+		let mut cups_job = CupsJob::try_new("printrs", cups_dest, cups_info, cups_opts)?;
 
-		job.add_documents(readers)?;
-		job.print()
+		cups_job.add_documents(readers)?;
+		cups_job.print()
 	}
 }
 
 fn add_options(
 	options: PrintOptions,
 	destination: &mut CupsDestination,
+	info: &mut CupsDestinationInfo,
 ) -> Result<CupsOptions, PrintError> {
 	// Maybe add a macro for this monstrosity?
 	let mut cups_options = CupsOptions::new();
-	add_option(options.copies, &mut cups_options, destination)?;
-	add_option(options.finishings, &mut cups_options, destination)?;
-	add_option(options.media_size, &mut cups_options, destination)?;
-	add_option(options.media_source, &mut cups_options, destination)?;
-	add_option(options.media_type, &mut cups_options, destination)?;
-	add_option(options.number_up, &mut cups_options, destination)?;
-	add_option(options.orientation, &mut cups_options, destination)?;
-	add_option(options.color_mode, &mut cups_options, destination)?;
-	add_option(options.quality, &mut cups_options, destination)?;
-	add_option(options.sides_mode, &mut cups_options, destination)?;
+	add_option(options.copies, &mut cups_options, destination, info)?;
+	add_option(options.finishings, &mut cups_options, destination, info)?;
+	add_option(options.media_size, &mut cups_options, destination, info)?;
+	add_option(options.media_source, &mut cups_options, destination, info)?;
+	add_option(options.media_type, &mut cups_options, destination, info)?;
+	add_option(options.number_up, &mut cups_options, destination, info)?;
+	add_option(options.orientation, &mut cups_options, destination, info)?;
+	add_option(options.color_mode, &mut cups_options, destination, info)?;
+	add_option(options.quality, &mut cups_options, destination, info)?;
+	add_option(options.sides_mode, &mut cups_options, destination, info)?;
 	Ok(cups_options)
 }
 
@@ -67,12 +71,13 @@ fn add_option<O: CupsOption>(
 	option: Option<O>,
 	cups_options: &mut CupsOptions,
 	cups_destination: &mut CupsDestination,
+	cups_info: &mut CupsDestinationInfo,
 ) -> Result<(), PrintError> {
 	let Some(option) = option else {
 		return Ok(());
 	};
 	// validate:
-	if !cups_options.validate(cups_destination, &option) {
+	if !cups_options.validate(cups_destination, cups_info, &option) {
 		return Err(PrintError::UnsupportedOption {
 			name: O::get_name().to_lowercase(),
 			value: option.to_human_string(),
