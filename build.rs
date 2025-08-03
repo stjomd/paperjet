@@ -1,8 +1,7 @@
-use std::env;
-use std::path::PathBuf;
+use std::{env, path};
 
 fn main() {
-	let target_family = std::env::var("CARGO_CFG_TARGET_FAMILY").unwrap();
+	let target_family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap();
 
 	if target_family == "unix" {
 		// Link CUPS
@@ -12,16 +11,37 @@ fn main() {
 	}
 }
 
+const CUPS_ALLOWED_FUNCTIONS: &[&str] = &[
+	"cupsAddOption",
+	"cupsCancelDestJob",
+	"cupsCheckDestSupported",
+	"cupsCloseDestJob",
+	"cupsCopyDestInfo",
+	"cupsCreateDestJob",
+	"cupsFinishDestDocument",
+	"cupsFreeDestInfo",
+	"cupsFreeDests",
+	"cupsFreeOptions",
+	"cupsGetDests2",
+	"cupsGetNamedDest",
+	"cupsLastErrorString",
+	"cupsStartDestDocument",
+	"cupsWriteRequestData",
+];
 fn cups_bindings() {
-	let builder = bindgen::builder().header("headers/cups.h");
+	let mut builder = bindgen::builder().header("headers/cups.h");
 
 	// Allowlist:
-	let builder = builder
-		.allowlist_function("cupsGetDests")
-		.allowlist_function("cupsFreeDests");
+	for function in CUPS_ALLOWED_FUNCTIONS {
+		builder = builder.allowlist_function(function);
+	}
+	// Type config:
+	builder = builder
+		.newtype_enum("ipp_status_e")
+		.newtype_enum("http_status_e");
 
 	// Generate & write:
-	let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+	let out_dir = path::PathBuf::from(env::var("OUT_DIR").unwrap());
 	let bindings = builder
 		.generate()
 		.expect("Unable to generate bindings for CUPS");

@@ -1,8 +1,12 @@
-use crate::cli::args::Args;
+use colored::Colorize;
+use std::process;
 
 mod cli;
 
 fn main() {
-	let args = Args::parse();
-	cli::run_command(args);
+	let args = cli::args::Args::parse();
+	if let Err(err) = cli::run_command(args) {
+		eprintln!("{} {}", "error:".bold().red(), err);
+		process::exit(1);
+	}
 }

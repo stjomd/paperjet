@@ -1,41 +1,46 @@
 use std::collections::HashMap;
-use std::process;
 
+use anyhow::{Result, anyhow};
 use colored::Colorize;
 use printrs::Printer;
 
 use crate::cli::args::DisplayArgs;
-use crate::cli::common::get_sorted_printers;
+use crate::cli::common;
 
 type KeyValueMap = HashMap<String, Option<String>>;
 
 /// The `display` command.
-pub fn display(args: DisplayArgs) {
-	let printers = get_sorted_printers();
-	let filtered_printers = printers
-		.iter()
-		.enumerate()
-		.filter(|(i, _)| args.id == (*i + 1))
-		.map(|(_, p)| p)
-		.collect::<Vec<&Printer>>();
-
-	let printer = filtered_printers.first();
-	let Some(printer) = printer else {
-		println!("No printer with ID {} was found.", args.id);
-		process::exit(1);
-	};
-
+pub fn display(args: DisplayArgs) -> Result<()> {
+	let printer = get_printer_by_criteria(&args.criteria)?;
 	println!("{}\n", printer.get_human_name().bold());
 
-	let info = collect_information(printer);
+	let info = collect_information(&printer);
 	print_key_value_pairs(&info);
 
 	if args.options {
-		let options = collect_options(printer);
+		let options = collect_options(&printer);
 		let header = format!("Options ({}):", printer.options.len());
 		println!("\n{}", header.bold());
 		print_key_value_pairs(&options);
 	}
+	Ok(())
+}
+
+/// Retrieves the printer by specified criteria, which is either the numerical ID or a name.
+fn get_printer_by_criteria(criteria: &str) -> Result<Printer> {
+	let mut printer = None;
+	if let Ok(id) = criteria.parse::<usize>() {
+		printer = common::get_printer_by_id(id);
+	};
+	if printer.is_none() {
+		printer = common::get_printer_by_name(criteria);
+	}
+	printer.ok_or_else(|| {
+		anyhow!(
+			"could not find a printer by criteria: '{}'",
+			criteria.yellow()
+		)
+	})
 }
 
 /// Collects basic printer information into a map.

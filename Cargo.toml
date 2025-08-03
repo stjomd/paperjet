@@ -13,8 +13,13 @@ name = "printrs"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.41", features = ["color", "derive"] }
+anyhow = "1.0.98"
+bincode = "2.0.1"
+clap = { version = "4.5.42", features = ["color", "derive"] }
 colored = "3.0.0"
+dirs = "6.0.0"
+strum = { version = "0.27.2", features = ["derive"] }
+thiserror = "2.0.12"
 
 [dev-dependencies]
 uuid = { version = "1.17.0", features = ["v4"] }
