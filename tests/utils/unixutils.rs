@@ -16,6 +16,7 @@ impl FakePrinter {
 		lpadmin()
 			.args(["-p", &name])
 			.args(["-v", &device_uri])
+			.arg("-E")
 			.output()?;
 		eprintln!("Created fake printer {name}");
 		Ok(Self { name, device_uri })
@@ -37,9 +38,10 @@ impl Drop for FakePrinter {
 				self.name,
 				output.status.code().unwrap_or(-1),
 				String::from_utf8_lossy(&output.stderr)
-			)
+			);
+		} else {
+			eprintln!("Dropped fake printer {}", self.name);
 		}
-		eprintln!("Dropped fake printer {}", self.name);
 	}
 }
 
