@@ -15,7 +15,7 @@ pub fn print(args: PrintArgs) -> Result<()> {
 		.paths
 		.iter()
 		.map(map_path_to_file_result)
-		.collect::<Result<_, _>>()?;
+		.collect::<Result<_>>()?;
 
 	let printer = if let Some(id) = args.printer_id {
 		common::get_printer_by_id(id).ok_or(anyhow!(
