@@ -1,7 +1,8 @@
 use crate::error::PrintError;
+use crate::print::unix::cups;
 use crate::print::unix::dest::{CupsDestination, CupsDestinationInfo};
 use crate::print::unix::options::CupsOptions;
-use crate::print::unix::{cstr_to_string, cups};
+use crate::print::util;
 use std::io::BufRead;
 use std::ops::DerefMut;
 use std::{ffi, io};
@@ -247,7 +248,7 @@ fn get_last_error() -> PrintError {
 	let message = unsafe {
 		let ptr = cups::cupsLastErrorString();
 		if !ptr.is_null() {
-			cstr_to_string(ptr)
+			util::cstr_to_string(ptr)
 		} else {
 			String::from("")
 		}

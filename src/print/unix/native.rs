@@ -4,11 +4,11 @@ use std::slice;
 
 use crate::error::PrintError;
 use crate::options::PrintOptions;
+use crate::print::unix::cups;
 use crate::print::unix::dest::{CupsDestination, CupsDestinationInfo, CupsDestinations};
 use crate::print::unix::job::CupsJob;
 use crate::print::unix::options::{CupsOption, CupsOptions};
-use crate::print::unix::{cstr_to_string, cups};
-use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer};
+use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer, util};
 
 impl CrossPlatformApi for PlatformSpecificApi {
 	fn get_printers() -> Vec<Printer> {
@@ -94,18 +94,23 @@ fn map_dest_to_printer(dest: CupsDestination) -> Printer {
 	unsafe {
 		let options = slice::from_raw_parts(dest.options, dest.num_options as usize)
 			.iter()
-			.map(|opt| (cstr_to_string(opt.name), cstr_to_string(opt.value)))
+			.map(|opt| {
+				(
+					util::cstr_to_string(opt.name),
+					util::cstr_to_string(opt.value),
+				)
+			})
 			.collect::<HashMap<String, String>>();
 
 		let instance = if !dest.instance.is_null() {
-			Some(cstr_to_string(dest.instance))
+			Some(util::cstr_to_string(dest.instance))
 		} else {
 			None
 		};
 
 		Printer {
-			identifier: cstr_to_string(dest.name),
-			name: cstr_to_string(dest.name),
+			identifier: util::cstr_to_string(dest.name),
+			name: util::cstr_to_string(dest.name),
 			instance,
 			is_default: dest.is_default == cups::consts::bool(true),
 			options,

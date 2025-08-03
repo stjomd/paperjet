@@ -4,10 +4,10 @@ use std::ops::DerefMut;
 use std::ptr;
 
 use crate::options::*;
-use crate::print::unix::FatPointerMut;
 use crate::print::unix::cups;
 use crate::print::unix::cups::consts::opts;
 use crate::print::unix::dest::{CupsDestination, CupsDestinationInfo};
+use crate::print::util::FatPointerMut;
 
 // MARK: - Cups Options Struct
 

@@ -3,8 +3,8 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 use std::ptr;
 
-use crate::print::unix::FatPointerMut;
 use crate::print::unix::cups;
+use crate::print::util::FatPointerMut;
 
 // NOTE: the point of these structs/wrappers is to adapt unsafe bindings to safe Rust types.
 // It is IMPORTANT that these structs do not rely on caller input during initialization if
@@ -186,8 +186,9 @@ impl<'a> DerefMut for CupsDestinationInfo<'a> {
 
 #[cfg(test)]
 mod tests {
+	use crate::print::unix::cups;
 	use crate::print::unix::dest::CupsDestinations;
-	use crate::print::unix::{FatPointerMut, cups};
+	use crate::print::util::FatPointerMut;
 
 	#[test]
 	fn if_no_destinations_then_get_always_none() {
