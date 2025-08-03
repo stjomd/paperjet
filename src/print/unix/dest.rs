@@ -34,7 +34,7 @@ impl CupsDestinations {
 			ptr: dests_ptr,
 		})
 	}
-	pub fn get(&mut self, index: usize) -> Option<CupsDestination> {
+	pub fn get(&'_ mut self, index: usize) -> Option<CupsDestination<'_>> {
 		// SAFETY: `self.0` is a valid fat pointer, pointing to memory allocated by CUPS.
 		// It remains valid until `cupsFreeDests` is called, which happens on drop.
 		unsafe {

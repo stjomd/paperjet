@@ -20,6 +20,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cups libcups2-dev libclang-dev
+      - name: Lint
+        run: cargo clippy -- --no-deps -D warnings
       - name: Build
         run: cargo build --verbose
       - name: Test
