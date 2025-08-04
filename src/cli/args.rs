@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 mod headings {
 	pub const DEVICES: &str = "Devices";
+	pub const PDF_MANIP: &str = "File manipulations (PDF only)";
 	pub const PRINT_OPTS: &str = "Printing options";
 	pub const MISC: &str = "Miscellaneous";
 }
@@ -77,6 +78,10 @@ pub struct PrintArgs {
 	/// Use the `list` command to get a list of available printers and their names.
 	#[arg(long, value_name = "NAME", group = "printer", help_heading = headings::DEVICES)]
 	pub printer_name: Option<String>,
+
+	/// Split the document in two to simulate duplex mode (printing on both sides).
+	#[arg(long = "duplex", help_heading = headings::PDF_MANIP)]
+	pub duplex: bool,
 
 	/// Amount of copies [default: 1]
 	///

@@ -56,7 +56,7 @@ pub trait CrossPlatformApi {
 // MARK: - Structs
 
 /// A struct representing a printer.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Printer {
 	pub identifier: String,
 	pub name: String,
