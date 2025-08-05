@@ -26,8 +26,8 @@ jobs:
         run: cargo build --verbose
       - name: Install PDFium
         run: |
-          PDFIUM_URL="$(curl -fsL https://api.github.com/repos/bblanchon/pdfium-binaries/releases/latest | jq -r --arg arch "x64" '.assets[] | select(.name? | match("^pdfium-linux-" + $arch + "\\.tgz$")) | .browser_download_url')"
-          curl -fsL "$PDFIUM_URL" -o pdfium.tgz
+          PDFIUM_URL="$(curl -fL https://api.github.com/repos/bblanchon/pdfium-binaries/releases/latest | jq -r --arg arch "x64" '.assets[] | select(.name? | match("^pdfium-linux-" + $arch + "\\.tgz$")) | .browser_download_url')"
+          curl -fL "$PDFIUM_URL" -o pdfium.tgz
           tar -xzf pdfium.tgz --strip-components=1 -C target/debug lib/libpdfium.so
       - name: Test
         run: cargo test --verbose --no-fail-fast
