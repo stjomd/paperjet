@@ -77,13 +77,22 @@ fn pdfium() -> Result<Pdfium> {
 /// Splits a provided `pdf_file` into two PDF documents: for the front and back side.
 fn split_pdf<'a>(pdfium: &'a Pdfium, pdf_file: File) -> Result<(PdfDocument<'a>, PdfDocument<'a>)> {
 	let source = pdfium.load_pdf_from_reader(pdf_file, None)?;
+	let pages_len = source.pages().len();
+	if pages_len < 2 {
+		bail!(
+			"document only has {} {}: must have at least {} pages to print in duplex mode",
+			pages_len.to_string().yellow(),
+			if pages_len == 1 { "page" } else { "pages" },
+			"2".green()
+		)
+	}
+
 	let mut front = pdfium.create_new_pdf()?;
 	let mut back = pdfium.create_new_pdf()?;
-
 	// Alternate between copying pages to `front` and `back`.
 	// When printing the back side, the printed front sides will be flipped, thus we need to copy
 	// the back side pages in reverse order.
-	for i in 0..source.pages().len() {
+	for i in 0..pages_len {
 		if i % 2 == 0 {
 			let j = front.pages().len();
 			front.pages_mut().copy_page_from_document(&source, i, j)?;
