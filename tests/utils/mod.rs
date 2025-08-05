@@ -1,2 +1,2 @@
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 pub mod unixutils;

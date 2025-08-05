@@ -6,5 +6,5 @@ pub mod options;
 
 mod util;
 
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 mod unix;
