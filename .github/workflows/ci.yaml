@@ -26,6 +26,7 @@ jobs:
         run: cargo build --verbose
       - name: Install PDFium
         run: |
+          echo $(uname -m)
           PDFIUM_URL="$(curl -fsL https://api.github.com/repos/bblanchon/pdfium-binaries/releases/latest | jq -r --arg arch "$(uname -m)" '.assets[] | select(.name? | match("^pdfium-linux-" + $arch + "\\.tgz$")) | .browser_download_url')"
           curl -fsL "$PDFIUM_URL" -o pdfium.tgz
           tar -xzf pdfium.tgz --strip-components=1 -C target/debug lib/libpdfium.so
