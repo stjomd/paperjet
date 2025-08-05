@@ -28,7 +28,7 @@ jobs:
         run: |
           PDFIUM_URL="$(curl -fsL https://api.github.com/repos/bblanchon/pdfium-binaries/releases/latest | jq -r --arg arch "$(uname -m)" '.assets[] | select(.name? | match("^pdfium-linux-" + $arch + "\\.tgz$")) | .browser_download_url')"
           curl -fsL "$PDFIUM_URL" -o pdfium.tgz
-          tar -xzf libpdfium2.tgz --strip-components=1 -C target/debug lib/libpdfium.so
+          tar -xzf pdfium.tgz --strip-components=1 -C target/debug lib/libpdfium.so
       - name: Test
         run: cargo test --verbose --no-fail-fast
         env:
