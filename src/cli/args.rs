@@ -1,6 +1,7 @@
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap::{ArgAction, Parser, Subcommand};
+use pdfium_render::prelude::PdfPageIndex;
 use printrs::options::{
 	ColorMode, Finishing, MediaSize, MediaSource, MediaType, Orientation, Quality, SidesMode,
 };
@@ -76,16 +77,28 @@ pub struct PrintArgs {
 	/// The name of the printer that should print the files.
 	///
 	/// Use the `list` command to get a list of available printers and their names.
-	#[arg(short = 'n', long, value_name = "NAME", group = "printer", help_heading = headings::DEVICES)]
+	#[arg(
+		short = 'n',
+		long,
+		value_name = "NAME",
+		group = "printer",
+		help_heading = headings::DEVICES
+	)]
 	pub printer_name: Option<String>,
 
 	/// The first page of the document to be printed (omits previous pages), counting from 1.
-	#[arg(short, long, value_name = "PAGE", help_heading = headings::PDF_MANIP)]
-	pub from: Option<usize>,
+	#[arg(
+		short,
+		long,
+		value_name = "PAGE",
+		value_parser = clap::value_parser!(PdfPageIndex).range(1..),
+		help_heading = headings::PDF_MANIP
+	)]
+	pub from: Option<PdfPageIndex>,
 
 	/// The last page of the document to be printed (omits following pages).
 	#[arg(short, long, value_name = "PAGE", help_heading = headings::PDF_MANIP)]
-	pub to: Option<usize>,
+	pub to: Option<PdfPageIndex>,
 
 	/// Split the document in two to simulate duplex mode (printing on both sides).
 	#[arg(short, long, help_heading = headings::PDF_MANIP)]

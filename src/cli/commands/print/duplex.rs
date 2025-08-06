@@ -1,11 +1,13 @@
 use std::fs::File;
 use std::io::{self, Cursor, Read, Seek, Write};
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, bail};
 use colored::Colorize;
 use pdfium_render::prelude::*;
 use printrs::Printer;
 use printrs::options::PrintOptions;
+
+use crate::cli::commands::print::pdf;
 
 pub fn print(mut files: Vec<File>, printer: Printer, options: PrintOptions) -> Result<()> {
 	// Validate amount of files
@@ -30,7 +32,7 @@ pub fn print(mut files: Vec<File>, printer: Printer, options: PrintOptions) -> R
 		)
 	}
 
-	let pdfium = pdfium()?;
+	let pdfium = pdf::pdfium()?;
 	let file = files.remove(0);
 
 	let (front_pdf, back_pdf) = split_pdf(&pdfium, file)?;
@@ -60,18 +62,6 @@ pub fn print(mut files: Vec<File>, printer: Printer, options: PrintOptions) -> R
 	printrs::print([Cursor::new(back_bytes)], printer, options)?;
 	println!("The back side has been submitted.");
 	Ok(())
-}
-
-/// Loads PDFium as a dynamic library.
-fn pdfium() -> Result<Pdfium> {
-	Ok(Pdfium::new(
-		Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
-			.or_else(|_| Pdfium::bind_to_system_library())
-			.map_err(|_e| match _e {
-				PdfiumError::LoadLibraryError(e) => anyhow!("could not link PDFium: {e}"),
-				e => anyhow!("could not link PDFium: {e}"),
-			})?,
-	))
 }
 
 /// Splits a provided `pdf_file` into two PDF documents: for the front and back side.
@@ -136,7 +126,7 @@ mod tests {
 
 	#[test]
 	fn if_empty_pdf_then_split_returns_err() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create an empty PDF file:
 		let pdf = pdfium
@@ -156,7 +146,7 @@ mod tests {
 
 	#[test]
 	fn if_pdf_with_one_page_then_split_returns_err() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create a PDF file with one page:
 		let mut pdf = pdfium
@@ -178,7 +168,7 @@ mod tests {
 
 	#[test]
 	fn if_pdf_with_two_pages_then_split_returns_ok() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create a PDF file with two pages:
 		let mut pdf = pdfium
@@ -203,7 +193,7 @@ mod tests {
 
 	#[test]
 	fn if_pdf_with_even_amount_of_pages_then_split_returns_documents_with_same_length() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create a PDF file with four pages:
 		let mut pdf = pdfium
@@ -230,7 +220,7 @@ mod tests {
 
 	#[test]
 	fn if_pdf_with_uneven_amount_of_pages_then_split_returns_documents_with_same_length() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create a PDF file with five pages:
 		let mut pdf = pdfium
@@ -257,7 +247,7 @@ mod tests {
 
 	#[test]
 	fn if_diff_amount_of_pages_then_align_should_even_out_amount_of_pages() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Mock front and back with uneven amount of pages (back has 1 less):
 		let pages_len = 3;
@@ -301,7 +291,7 @@ mod tests {
 
 	#[test]
 	fn if_same_amount_of_pages_then_align_should_not_change_amount_of_pages() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Mock front and back with same amount of pages:
 		let pages_len = 2;
