@@ -76,11 +76,19 @@ pub struct PrintArgs {
 	/// The name of the printer that should print the files.
 	///
 	/// Use the `list` command to get a list of available printers and their names.
-	#[arg(long, value_name = "NAME", group = "printer", help_heading = headings::DEVICES)]
+	#[arg(short = 'n', long, value_name = "NAME", group = "printer", help_heading = headings::DEVICES)]
 	pub printer_name: Option<String>,
 
+	/// The first page of the document to be printed (omits previous pages), counting from 1.
+	#[arg(short, long, value_name = "PAGE", help_heading = headings::PDF_MANIP)]
+	pub from: Option<usize>,
+
+	/// The last page of the document to be printed (omits following pages).
+	#[arg(short, long, value_name = "PAGE", help_heading = headings::PDF_MANIP)]
+	pub to: Option<usize>,
+
 	/// Split the document in two to simulate duplex mode (printing on both sides).
-	#[arg(long = "duplex", help_heading = headings::PDF_MANIP)]
+	#[arg(short, long, help_heading = headings::PDF_MANIP)]
 	pub duplex: bool,
 
 	/// Amount of copies [default: 1]
@@ -95,7 +103,7 @@ pub struct PrintArgs {
 	pub copies: Option<c_int>,
 
 	/// Finishing processes to be performed by the printer.
-	#[arg(short, long, value_delimiter = ',', help_heading = headings::PRINT_OPTS)]
+	#[arg(long, value_delimiter = ',', help_heading = headings::PRINT_OPTS)]
 	pub finishings: Option<Vec<Finishing>>,
 
 	/// Size of the media, most often paper size.
@@ -107,13 +115,14 @@ pub struct PrintArgs {
 	pub source: Option<MediaSource>,
 
 	/// Type of media.
-	#[arg(short = 't', long, help_heading = headings::PRINT_OPTS)]
+	#[arg(long, value_name = "TYPE", help_heading = headings::PRINT_OPTS)]
 	pub media_type: Option<MediaType>,
 
 	/// Number of document pages per media side [default: 1]
 	#[arg(
 		short = 'u',
 		long,
+		value_name = "PAGES",
 		value_parser = clap::value_parser!(c_int).range(1..),
 		help_heading = headings::PRINT_OPTS
 	)]
@@ -128,11 +137,11 @@ pub struct PrintArgs {
 	pub color_mode: Option<ColorMode>,
 
 	/// The quality of the resulting print.
-	#[arg(short, long, help_heading = headings::PRINT_OPTS)]
+	#[arg(short, long, value_name = "MODE", help_heading = headings::PRINT_OPTS)]
 	pub quality: Option<Quality>,
 
 	/// Determines whether only one or both sides of the media should be printed on.
-	#[arg(short = 'd', long, help_heading = headings::PRINT_OPTS)]
+	#[arg(short = 'i', value_name = "MODE", long, help_heading = headings::PRINT_OPTS)]
 	pub sides_mode: Option<SidesMode>,
 }
 
