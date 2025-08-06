@@ -16,8 +16,23 @@ pub fn pdfium() -> Result<Pdfium> {
 	))
 }
 
-/// Returns a new PDF document that only has pages whose number is contained in `range`.
+/// Returns a new PDF document that only has pages whose number is contained in the range
+/// specified by its start index (beginning from 1) and end index (inclusive).
 pub fn slice_document<'a>(
+	pdfium: &'a Pdfium,
+	source: &PdfDocument<'a>,
+	from: Option<PdfPageIndex>,
+	to: Option<PdfPageIndex>,
+) -> Result<PdfDocument<'a>> {
+	let (from, to) = (
+		from.unwrap_or(1),
+		to.unwrap_or_else(|| source.pages().len()),
+	);
+	slice_document_rng(pdfium, source, from..=to)
+}
+
+/// Returns a new PDF document that only has pages whose number is contained in `range`.
+fn slice_document_rng<'a>(
 	pdfium: &'a Pdfium,
 	source: &PdfDocument<'a>,
 	range: RangeInclusive<PdfPageIndex>,
@@ -44,28 +59,28 @@ fn validate_range<'a>(
 	let pages_len = source.pages().len();
 	if *range.start() < 1 {
 		bail!(
-			"range must start from {}: provided {}",
+			"range must start from '{}': provided '{}'",
 			"1".green(),
 			range.start().to_string().yellow(),
 		)
 	}
 	if *range.start() > pages_len {
 		bail!(
-			"document has {} pages, but range is starting from {}",
+			"document has '{}' pages, but range is starting from page '{}'",
 			pages_len.to_string().green(),
 			range.start().to_string().yellow(),
 		)
 	}
 	if *range.end() > pages_len {
 		bail!(
-			"document has {} pages, but range is ending at {}",
+			"document has '{}' pages, but range is ending at page '{}'",
 			pages_len.to_string().green(),
 			range.end().to_string().yellow(),
 		)
 	}
 	if *range.start() > *range.end() {
 		bail!(
-			"range is empty: from {} to {}",
+			"range is empty: from page '{}' to page '{}'",
 			range.start().to_string().yellow(),
 			range.end().to_string().yellow(),
 		)
@@ -87,15 +102,15 @@ mod tests {
 
 		// No matter what the passed in range is, result should be Err
 		assert!(
-			slice_document(&pdfium, &source, 0..=0).is_err(),
+			slice_document_rng(&pdfium, &source, 0..=0).is_err(),
 			"slice_document should return Err, but returned Ok"
 		);
 		assert!(
-			slice_document(&pdfium, &source, 0..=5).is_err(),
+			slice_document_rng(&pdfium, &source, 0..=5).is_err(),
 			"slice_document should return Err, but returned Ok"
 		);
 		assert!(
-			slice_document(&pdfium, &source, 5..=0).is_err(),
+			slice_document_rng(&pdfium, &source, 5..=0).is_err(),
 			"slice_document should return Err, but returned Ok"
 		);
 	}
@@ -115,7 +130,7 @@ mod tests {
 		}
 
 		// As long as the range is valid, result should be Ok, and contain appropriate number of pages
-		let sliced = slice_document(&pdfium, &source, 2..=3).expect("Could not slice document");
+		let sliced = slice_document_rng(&pdfium, &source, 2..=3).expect("Could not slice document");
 		assert_eq!(
 			2,
 			sliced.pages().len(),
@@ -124,7 +139,7 @@ mod tests {
 			sliced.pages().len()
 		);
 
-		let sliced = slice_document(&pdfium, &source, 1..=5).expect("Could not slice document");
+		let sliced = slice_document_rng(&pdfium, &source, 1..=5).expect("Could not slice document");
 		assert_eq!(
 			5,
 			sliced.pages().len(),
@@ -149,20 +164,20 @@ mod tests {
 		}
 
 		// As long as the range is invalid, results should be Err:
-		let result = slice_document(&pdfium, &source, 0..=3);
+		let result = slice_document_rng(&pdfium, &source, 0..=3);
 		assert!(
 			result.is_err(),
 			"range starting with 0 is invalid, but Ok was returned"
 		);
 
-		let result = slice_document(&pdfium, &source, 1..=6);
+		let result = slice_document_rng(&pdfium, &source, 1..=6);
 		assert!(
 			result.is_err(),
 			"range ending with 6 is invalid (as document has {pages_len} pages), but Ok was returned",
 		);
 
 		#[allow(clippy::reversed_empty_ranges)]
-		let result = slice_document(&pdfium, &source, 4..=2);
+		let result = slice_document_rng(&pdfium, &source, 4..=2);
 		assert!(result.is_err(), "range is empty, but Ok was returned");
 	}
 
@@ -178,7 +193,8 @@ mod tests {
 			.expect("Could not create page");
 
 		// The only valid range for a document with one page is 1..=1:
-		let result = slice_document(&pdfium, &source, 1..=1).expect("valid range must return Ok");
+		let result =
+			slice_document_rng(&pdfium, &source, 1..=1).expect("valid range must return Ok");
 		assert_eq!(
 			1,
 			result.pages().len(),
@@ -188,17 +204,17 @@ mod tests {
 		);
 
 		// Any other range is invalid:
-		let result = slice_document(&pdfium, &source, 0..=1);
+		let result = slice_document_rng(&pdfium, &source, 0..=1);
 		assert!(result.is_err(), "range is invalid, but Ok was returned");
 
-		let result = slice_document(&pdfium, &source, 1..=2);
+		let result = slice_document_rng(&pdfium, &source, 1..=2);
 		assert!(result.is_err(), "range is invalid, but Ok was returned");
 
-		let result = slice_document(&pdfium, &source, 0..=2);
+		let result = slice_document_rng(&pdfium, &source, 0..=2);
 		assert!(result.is_err(), "range is invalid, but Ok was returned");
 
 		#[allow(clippy::reversed_empty_ranges)]
-		let result = slice_document(&pdfium, &source, 2..=1);
+		let result = slice_document_rng(&pdfium, &source, 2..=1);
 		assert!(result.is_err(), "range is invalid, but Ok was returned");
 	}
 }

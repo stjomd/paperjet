@@ -87,13 +87,7 @@ pub struct PrintArgs {
 	pub printer_name: Option<String>,
 
 	/// The first page of the document to be printed (omits previous pages), counting from 1.
-	#[arg(
-		short,
-		long,
-		value_name = "PAGE",
-		value_parser = clap::value_parser!(PdfPageIndex).range(1..),
-		help_heading = headings::PDF_MANIP
-	)]
+	#[arg(short, long, value_name = "PAGE", help_heading = headings::PDF_MANIP)]
 	pub from: Option<PdfPageIndex>,
 
 	/// The last page of the document to be printed (omits following pages).

@@ -20,11 +20,12 @@ pub fn get_default_printer() -> Option<Printer> {
 	PlatformSpecificApi::get_default_printer()
 }
 
+// TODO: remove Seek requirement
 /// Prints the contents of each of the specified [`readers`].
 pub fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 where
 	I: IntoIterator<Item = R>,
-	R: io::Read,
+	R: io::Read + io::Seek,
 {
 	PlatformSpecificApi::print(readers, printer, options)
 }
@@ -50,7 +51,7 @@ pub trait CrossPlatformApi {
 	fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
-		R: io::Read;
+		R: io::Read + io::Seek;
 }
 
 // MARK: - Structs

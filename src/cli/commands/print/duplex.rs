@@ -1,4 +1,3 @@
-use std::fs::File;
 use std::io::{self, Cursor, Read, Seek, Write};
 
 use anyhow::{Result, bail};
@@ -9,9 +8,14 @@ use printrs::options::PrintOptions;
 
 use crate::cli::commands::print::pdf;
 
-pub fn print(mut files: Vec<File>, printer: Printer, options: PrintOptions) -> Result<()> {
+pub fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<()>
+where
+	I: IntoIterator<Item = R>,
+	R: Read + Seek,
+{
+	let mut readers = readers.into_iter().collect::<Vec<_>>();
 	// Validate amount of files
-	if files.len() != 1 {
+	if readers.len() != 1 {
 		bail!("exactly one file must be specified to print in duplex mode")
 	}
 	// Validate options
@@ -33,7 +37,7 @@ pub fn print(mut files: Vec<File>, printer: Printer, options: PrintOptions) -> R
 	}
 
 	let pdfium = pdf::pdfium()?;
-	let file = files.remove(0);
+	let file = readers.remove(0);
 
 	let (front_pdf, back_pdf) = split_pdf(&pdfium, file)?;
 	let (front_len, back_len) = (front_pdf.pages().len(), back_pdf.pages().len());

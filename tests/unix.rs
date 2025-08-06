@@ -2,6 +2,8 @@
 
 mod utils;
 
+use std::io::Cursor;
+
 use printrs::options::PrintOptions;
 
 use crate::utils::unixutils::FakePrinter;
@@ -94,7 +96,8 @@ fn if_printer_accepts_jobs_then_print_returns_unit() {
 	// Get the printer:
 	let printer = printrs::get_printer(&fake.name).expect("Could not find the fake printer");
 	// Submit print job:
-	let result = printrs::print([&document[..]], printer, PrintOptions::default());
+	let readers = [Cursor::new(document)];
+	let result = printrs::print(readers, printer, PrintOptions::default());
 	assert!(
 		result.is_ok(),
 		"Print job should be submitted successfully, but wasn't"
@@ -111,7 +114,8 @@ fn if_printer_not_accepts_jobs_then_print_returns_err() {
 	// Get the printer:
 	let printer = printrs::get_printer(&fake.name).expect("Could not find the fake printer");
 	// Submit print job:
-	let result = printrs::print([&document[..]], printer, PrintOptions::default());
+	let readers = [Cursor::new(document)];
+	let result = printrs::print(readers, printer, PrintOptions::default());
 	assert!(result.is_err(), "Print job should not be accepted, but was");
 }
 
@@ -127,6 +131,7 @@ fn if_printer_no_longer_exists_then_print_returns_err() {
 	drop(fake);
 
 	// Submit print job:
-	let result = printrs::print([&document[..]], printer, PrintOptions::default());
+	let readers = [Cursor::new(document)];
+	let result = printrs::print(readers, printer, PrintOptions::default());
 	assert!(result.is_err(), "Print job should not be accepted, but was");
 }
