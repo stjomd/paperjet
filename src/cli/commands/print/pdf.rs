@@ -16,6 +16,7 @@ pub fn pdfium() -> Result<Pdfium> {
 	))
 }
 
+/// Returns a new PDF document that only has pages whose number is contained in `range`.
 pub fn slice_document<'a>(
 	pdfium: &'a Pdfium,
 	source: &PdfDocument<'a>,
@@ -24,8 +25,22 @@ pub fn slice_document<'a>(
 	if source.pages().is_empty() {
 		bail!("document is empty");
 	}
+	validate_range(source, &range)?;
 
-	// Validate range (from user point of view, indexing starts with 1)
+	let idx_range = (range.start() - 1)..=(range.end() - 1);
+	let mut new = pdfium.create_new_pdf()?;
+	new.pages_mut()
+		.copy_page_range_from_document(source, idx_range, 0)?;
+	Ok(new)
+}
+
+/// Validates that `range` is valid from user point of view (indexing from 1).
+/// Returns `Ok(())` if `range` is valid, and `Err` otherwise.
+fn validate_range<'a>(
+	source: &PdfDocument<'a>,
+	range: &RangeInclusive<PdfPageIndex>,
+) -> Result<()> {
+	// Range is from user point of view, thus indexing starts with 1
 	let pages_len = source.pages().len();
 	if *range.start() < 1 {
 		bail!(
@@ -55,12 +70,7 @@ pub fn slice_document<'a>(
 			range.end().to_string().yellow(),
 		)
 	}
-
-	let idx_range = (range.start() - 1)..=(range.end() - 1);
-	let mut new = pdfium.create_new_pdf()?;
-	new.pages_mut()
-		.copy_page_range_from_document(source, idx_range, 0)?;
-	Ok(new)
+	Ok(())
 }
 
 #[cfg(test)]
