@@ -9,8 +9,8 @@ use printrs::error::PrintError;
 use printrs::options::PrintOptions;
 
 use crate::cli::args::PrintArgs;
-use crate::cli::commands::print::{duplex, pdf};
-use crate::cli::common;
+use crate::cli::commands::print::duplex;
+use crate::cli::{common, pdf};
 
 // TODO: refactor this mess
 // TODO: remove io::Seek requirement on printrs::print (required by duplex::print <- split_pdf)
@@ -22,26 +22,14 @@ use crate::cli::common;
 //			yes -> split and get two bytes vecs (io::Read) => interactive printing
 //			no -> keep files => normal printing
 
+// 1. open files
+// 2. process file?
+// 3. print
+
 /// The `print` command
 pub fn print(args: PrintArgs) -> Result<()> {
-	let files: Vec<File> = args
-		.paths
-		.iter()
-		.map(map_path_to_file_result)
-		.collect::<Result<_>>()?;
-
-	// Printer selection
-	let printer = if let Some(id) = args.printer_id {
-		common::get_printer_by_id(id).ok_or(anyhow!(
-			"could not find a printer by the ID: '{}'",
-			id.to_string().yellow()
-		))?
-	} else if let Some(ref name) = args.printer_name {
-		common::get_printer_by_name(name)
-			.ok_or_else(|| anyhow!("could not find a printer by the name: '{}'", name.yellow()))?
-	} else {
-		printrs::get_default_printer().ok_or(PrintError::NoPrinters)?
-	};
+	let files = open_files(&args.paths)?;
+	let printer = select_printer(&args)?;
 
 	// Printing + slicing
 	if args.from.is_some() || args.to.is_some() {
@@ -54,6 +42,43 @@ pub fn print(args: PrintArgs) -> Result<()> {
 	} else {
 		// Just start printing
 		start_printing(files, printer, args)
+	}
+}
+
+/// Converts a collection of paths into a collection of files at those paths.
+/// Returns `Ok` if all files could be opened, or `Err` if at least one file could not be opened
+/// (the error refers to the first file that could not be opened).
+fn open_files(paths: &[PathBuf]) -> Result<Vec<File>> {
+	paths
+		.iter()
+		.map(|path| {
+			File::open(path).map_err(|e| {
+				anyhow!(
+					"could not open file '{}': {}",
+					path.display().to_string().yellow(),
+					e,
+				)
+			})
+		})
+		.collect::<Result<_>>()
+}
+
+/// Selects a printer according to the arguments.
+fn select_printer(args: &PrintArgs) -> Result<Printer> {
+	if let Some(id) = args.printer_id {
+		common::get_printer_by_id(id).ok_or(anyhow!(
+			"could not find a printer by the ID: '{}'",
+			id.to_string().yellow()
+		))
+	} else if let Some(ref name) = args.printer_name {
+		common::get_printer_by_name(name).ok_or(anyhow!(
+			"could not find a printer by the name: '{}'",
+			name.yellow()
+		))
+	} else {
+		printrs::get_default_printer()
+			.ok_or(PrintError::NoPrinters)
+			.map_err(anyhow::Error::from)
 	}
 }
 
@@ -85,15 +110,4 @@ where
 			.inspect(|_| println!("Files have been submitted for printing."))
 			.map_err(anyhow::Error::from)
 	}
-}
-
-/// Opens the file at the specified path and returns it.
-fn map_path_to_file_result(path: &PathBuf) -> Result<File> {
-	File::open(path).map_err(|e| {
-		anyhow!(
-			"could not open file '{}': {}",
-			path.display().to_string().yellow(),
-			e
-		)
-	})
 }

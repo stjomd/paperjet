@@ -6,7 +6,7 @@ use pdfium_render::prelude::*;
 use printrs::Printer;
 use printrs::options::PrintOptions;
 
-use crate::cli::commands::print::pdf;
+use crate::cli::pdf;
 
 pub fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<()>
 where
