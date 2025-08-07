@@ -11,8 +11,6 @@ use crate::cli::args::PrintArgs;
 use crate::cli::commands::print::{duplex, transform};
 use crate::cli::common;
 
-// TODO: remove io::Seek requirement on printrs::print (required by duplex::print <- split_pdf)
-
 /// The `print` command
 pub fn print(args: PrintArgs) -> Result<()> {
 	let files = open_files(&args.paths)?;
