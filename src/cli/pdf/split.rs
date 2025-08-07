@@ -1,15 +1,12 @@
-use std::io::{Read, Seek};
-
 use anyhow::{Result, bail};
 use colored::Colorize;
 use pdfium_render::prelude::*;
 
-/// Splits a provided `pdf_file` into two PDF documents: for the front and back side.
-pub fn split_pdf<'a, R>(pdfium: &'a Pdfium, reader: R) -> Result<(PdfDocument<'a>, PdfDocument<'a>)>
-where
-	R: Read + Seek,
-{
-	let source = pdfium.load_pdf_from_reader(reader, None)?;
+/// Splits a provided `source` PDF file into two PDF documents: for the front and back side.
+pub fn split_pdf<'a>(
+	pdfium: &'a Pdfium,
+	source: &PdfDocument<'a>,
+) -> Result<(PdfDocument<'a>, PdfDocument<'a>)> {
 	let pages_len = source.pages().len();
 	if pages_len < 2 {
 		bail!(
@@ -28,9 +25,9 @@ where
 	for i in 0..pages_len {
 		if i % 2 == 0 {
 			let j = front.pages().len();
-			front.pages_mut().copy_page_from_document(&source, i, j)?;
+			front.pages_mut().copy_page_from_document(source, i, j)?;
 		} else {
-			back.pages_mut().copy_page_from_document(&source, i, 0)?;
+			back.pages_mut().copy_page_from_document(source, i, 0)?;
 		};
 	}
 
@@ -55,19 +52,10 @@ fn align_sides(front: &mut PdfDocument, back: &mut PdfDocument, dimensions: PdfR
 	Ok(())
 }
 
-/// Converts two split PDF documents, `even` and `odd`, to bytes.
-pub fn pdfs_to_bytes<'a>(
-	even: PdfDocument<'a>,
-	odd: PdfDocument<'a>,
-) -> Result<(Vec<u8>, Vec<u8>)> {
-	Ok((even.save_to_bytes()?, odd.save_to_bytes()?))
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
 	use crate::cli::pdf;
-	use std::io::Cursor;
 
 	#[test]
 	fn if_empty_pdf_then_split_returns_err() {
@@ -76,13 +64,10 @@ mod tests {
 		// Create an empty PDF file:
 		let pdf = pdfium
 			.create_new_pdf()
-			.expect("Could not create new PDF with PDFium")
-			.save_to_bytes()
-			.expect("Could not save PDF to bytes");
-		let reader = Cursor::new(pdf);
+			.expect("Could not create new PDF with PDFium");
 
 		// Attempt to split the file: it has 0 pages, and thus fails
-		let result = split_pdf(&pdfium, reader);
+		let result = split_pdf(&pdfium, &pdf);
 		assert!(
 			result.is_err(),
 			"split_pdf should return an error, but didn't"
@@ -100,11 +85,9 @@ mod tests {
 		pdf.pages_mut()
 			.create_page_at_end(PdfPagePaperSize::a4())
 			.expect("Could not create a PDF page");
-		let pdf = pdf.save_to_bytes().expect("Could not save PDF to bytes");
-		let reader = Cursor::new(pdf);
 
 		// Attempt to split the file: it has 1 page, and thus fails
-		let result = split_pdf(&pdfium, reader);
+		let result = split_pdf(&pdfium, &pdf);
 		assert!(
 			result.is_err(),
 			"split_pdf should return an error, but didn't"
@@ -125,11 +108,9 @@ mod tests {
 		pdf.pages_mut()
 			.create_page_at_end(PdfPagePaperSize::a4())
 			.expect("Could not create a PDF page");
-		let pdf = pdf.save_to_bytes().expect("Could not save PDF to bytes");
-		let reader = Cursor::new(pdf);
 
 		// Attempt to split the file: it has 2 page, and thus returns Ok
-		let result = split_pdf(&pdfium, reader);
+		let result = split_pdf(&pdfium, &pdf);
 		assert!(
 			result.is_ok(),
 			"split_pdf should return Ok, but returned: {result:?}",
@@ -149,11 +130,9 @@ mod tests {
 				.create_page_at_end(PdfPagePaperSize::a4())
 				.expect("Could not create a PDF page");
 		}
-		let pdf = pdf.save_to_bytes().expect("Could not save PDF to bytes");
-		let reader = Cursor::new(pdf);
 
 		// Split the file:
-		let (front, back) = split_pdf(&pdfium, reader).expect("Could not split PDF");
+		let (front, back) = split_pdf(&pdfium, &pdf).expect("Could not split PDF");
 
 		// Front and back should have the same number of pages:
 		assert_eq!(
@@ -176,11 +155,9 @@ mod tests {
 				.create_page_at_end(PdfPagePaperSize::a4())
 				.expect("Could not create a PDF page");
 		}
-		let pdf = pdf.save_to_bytes().expect("Could not save PDF to bytes");
-		let reader = Cursor::new(pdf);
 
 		// Split the file:
-		let (front, back) = split_pdf(&pdfium, reader).expect("Could not split PDF");
+		let (front, back) = split_pdf(&pdfium, &pdf).expect("Could not split PDF");
 
 		// Front and back should have the same amount of pages (be aligned):
 		assert_eq!(

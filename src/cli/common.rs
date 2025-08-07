@@ -70,11 +70,11 @@ fn get_printer_by_name_from_api(name: &str) -> Option<Printer> {
 	})
 }
 
-impl From<PrintArgs> for PrintOptions {
-	fn from(value: PrintArgs) -> PrintOptions {
+impl From<&PrintArgs> for PrintOptions {
+	fn from(value: &PrintArgs) -> PrintOptions {
 		PrintOptions {
 			copies: value.copies.map(CopiesInt::from),
-			finishings: value.finishings,
+			finishings: value.finishings.clone(),
 			media_size: value.size,
 			media_source: value.source,
 			media_type: value.media_type,

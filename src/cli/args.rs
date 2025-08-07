@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 mod headings {
 	pub const DEVICES: &str = "Devices";
-	pub const PDF_MANIP: &str = "File manipulations (PDF only)";
+	pub const PDF_MANIP: &str = "File transformations (PDF only)";
 	pub const PRINT_OPTS: &str = "Printing options";
 	pub const MISC: &str = "Miscellaneous";
 }

@@ -1,45 +1,40 @@
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, Write};
+use std::io::Cursor;
 use std::path::PathBuf;
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, anyhow};
 use colored::Colorize;
 use printrs::Printer;
-use printrs::error::PrintError;
 use printrs::options::PrintOptions;
 
 use crate::cli::args::PrintArgs;
-use crate::cli::commands::print::duplex;
-use crate::cli::{common, pdf};
+use crate::cli::commands::print::{duplex, transform};
+use crate::cli::common;
 
-// TODO: refactor this mess
 // TODO: remove io::Seek requirement on printrs::print (required by duplex::print <- split_pdf)
-
-// 1. args.from/to.is_some()
-//		  yes -> slice and get bytes
-//		  no -> keep files
-// 2. args.duplex == true
-//			yes -> split and get two bytes vecs (io::Read) => interactive printing
-//			no -> keep files => normal printing
-
-// 1. open files
-// 2. process file?
-// 3. print
 
 /// The `print` command
 pub fn print(args: PrintArgs) -> Result<()> {
 	let files = open_files(&args.paths)?;
 	let printer = select_printer(&args)?;
 
-	// Printing + slicing
-	if args.from.is_some() || args.to.is_some() {
-		// Slice document, then print that
-		let sliced_document = slice_document(files, &args)?;
-		submit([sliced_document], printer, args)
-	} else {
-		// Just start printing
-		submit(files, printer, args)
+	// Transform
+	let documents = transform::transform(files, &args)?
+		.into_iter()
+		.map(Cursor::new)
+		.collect::<Vec<_>>();
+
+	// Duplex mode is interactive and will submit to print on its own: hence the return
+	if args.duplex {
+		return duplex::begin_printing(documents, printer, &args);
 	}
+
+	// Simplex mode: submit to print
+	let options = PrintOptions::from(&args);
+	printrs::print(documents, printer, options)?;
+	println!("Files have been submitted for printing.");
+
+	Ok(())
 }
 
 /// Converts a collection of paths into a collection of files at those paths.
@@ -73,39 +68,6 @@ fn select_printer(args: &PrintArgs) -> Result<Printer> {
 			name.yellow()
 		))
 	} else {
-		printrs::get_default_printer()
-			.ok_or(PrintError::NoPrinters)
-			.map_err(anyhow::Error::from)
-	}
-}
-
-fn slice_document(mut files: Vec<File>, args: &PrintArgs) -> Result<Cursor<Vec<u8>>> {
-	if files.len() != 1 {
-		bail!("exactly one file must be specified to slice a document")
-	}
-	let file = files.remove(0);
-	let pdfium = pdf::pdfium()?;
-
-	let source = pdfium.load_pdf_from_reader(file, None)?;
-	let sliced = pdf::slice::slice_document(&pdfium, &source, args.from, args.to)?;
-
-	let bytes = sliced.save_to_bytes()?;
-	Ok(Cursor::new(bytes))
-}
-
-/// Submits documents (`readers`) for printing.
-fn submit<I, R>(readers: I, printer: Printer, args: PrintArgs) -> Result<()>
-where
-	I: IntoIterator<Item = R>,
-	R: Read + Seek,
-{
-	let is_duplex = args.duplex;
-	let options = PrintOptions::from(args);
-	if is_duplex {
-		duplex::begin_printing(readers, printer, options)
-	} else {
-		printrs::print(readers, printer, options)
-			.inspect(|_| println!("Files have been submitted for printing."))
-			.map_err(anyhow::Error::from)
+		printrs::get_default_printer().ok_or(anyhow!("no default printer is available"))
 	}
 }
