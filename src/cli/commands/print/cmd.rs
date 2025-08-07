@@ -35,13 +35,10 @@ pub fn print(args: PrintArgs) -> Result<()> {
 	if args.from.is_some() || args.to.is_some() {
 		// Slice document, then print that
 		let sliced_document = slice_document(files, &args)?;
-		let mut file = File::create("test.pdf")?;
-		file.write_all(&sliced_document.into_inner())?;
-		Ok(())
-		// start_printing([sliced_document], printer, args)
+		submit([sliced_document], printer, args)
 	} else {
 		// Just start printing
-		start_printing(files, printer, args)
+		submit(files, printer, args)
 	}
 }
 
@@ -96,7 +93,8 @@ fn slice_document(mut files: Vec<File>, args: &PrintArgs) -> Result<Cursor<Vec<u
 	Ok(Cursor::new(bytes))
 }
 
-fn start_printing<I, R>(readers: I, printer: Printer, args: PrintArgs) -> Result<()>
+/// Submits documents (`readers`) for printing.
+fn submit<I, R>(readers: I, printer: Printer, args: PrintArgs) -> Result<()>
 where
 	I: IntoIterator<Item = R>,
 	R: Read + Seek,
