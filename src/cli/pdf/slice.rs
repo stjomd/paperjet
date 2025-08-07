@@ -1,20 +1,8 @@
 use std::ops::RangeInclusive;
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, bail};
 use colored::Colorize;
 use pdfium_render::prelude::*;
-
-/// Loads PDFium as a dynamic library.
-pub fn pdfium() -> Result<Pdfium> {
-	Ok(Pdfium::new(
-		Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./"))
-			.or_else(|_| Pdfium::bind_to_system_library())
-			.map_err(|_e| match _e {
-				PdfiumError::LoadLibraryError(e) => anyhow!("could not link PDFium: {e}"),
-				e => anyhow!("could not link PDFium: {e}"),
-			})?,
-	))
-}
 
 /// Returns a new PDF document that only has pages whose number is contained in the range
 /// specified by its start index (beginning from 1) and end index (inclusive).
@@ -91,11 +79,12 @@ fn validate_range<'a>(
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::cli::pdf;
 
 	#[test]
 	#[allow(clippy::reversed_empty_ranges)]
 	fn if_empty_source_then_err() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create an empty source document
 		let source = pdfium.create_new_pdf().expect("Could not create a new PDF");
@@ -117,7 +106,7 @@ mod tests {
 
 	#[test]
 	fn if_source_has_pages_and_valid_range_then_ok() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create a source document
 		let pages_len = 5;
@@ -151,7 +140,7 @@ mod tests {
 
 	#[test]
 	fn if_source_has_pages_and_invalid_range_then_err() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create a source document
 		let pages_len = 5;
@@ -183,7 +172,7 @@ mod tests {
 
 	#[test]
 	fn if_source_has_exactly_one_page_and_some_range_then_returns_correct_result() {
-		let pdfium = pdfium().expect("PDFium should be available, but isn't");
+		let pdfium = pdf::pdfium().expect("PDFium should be available, but isn't");
 
 		// Create a source document with one page
 		let mut source = pdfium.create_new_pdf().expect("Could not create a new PDF");

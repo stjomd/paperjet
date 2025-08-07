@@ -90,7 +90,7 @@ fn slice_document(mut files: Vec<File>, args: &PrintArgs) -> Result<Cursor<Vec<u
 	let pdfium = pdf::pdfium()?;
 
 	let source = pdfium.load_pdf_from_reader(file, None)?;
-	let sliced = pdf::slice_document(&pdfium, &source, args.from, args.to)?;
+	let sliced = pdf::slice::slice_document(&pdfium, &source, args.from, args.to)?;
 
 	let bytes = sliced.save_to_bytes()?;
 	Ok(Cursor::new(bytes))
@@ -104,7 +104,7 @@ where
 	let is_duplex = args.duplex;
 	let options = PrintOptions::from(args);
 	if is_duplex {
-		duplex::print(readers, printer, options)
+		duplex::begin_printing(readers, printer, options)
 	} else {
 		printrs::print(readers, printer, options)
 			.inspect(|_| println!("Files have been submitted for printing."))
