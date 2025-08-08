@@ -1,7 +1,8 @@
 use std::io::{self, Cursor, Read, Seek, Write};
 
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 use colored::Colorize;
+use pdfium_render::prelude::*;
 use printrs::Printer;
 use printrs::options::PrintOptions;
 
@@ -18,40 +19,17 @@ where
 	I: IntoIterator<Item = R>,
 	R: Read + Seek,
 {
-	let (front, back) = {
-		let mut iter = readers.into_iter();
-		match (iter.next(), iter.next()) {
-			(Some(first), Some(second)) => (first, second),
-			_ => bail!("could not access two readers for the respective sides"),
-		}
-	};
+	let (front, back) = extract_first_two(readers)
+		.ok_or_else(|| anyhow!("could not access two readers for the respective sides"))?;
 
-	// Validate options
 	let options = PrintOptions::from(args);
-	if options.copies.is_some() {
-		bail!(
-			"option '{}' is not supported in duplex mode",
-			"copies".yellow()
-		)
-	} else if options.number_up.is_some() {
-		bail!(
-			"option '{}' is not supported in duplex mode",
-			"number up".yellow()
-		)
-	} else if options.sides_mode.is_some() {
-		bail!(
-			"option '{}' is not supported in duplex mode",
-			"sides mode".yellow()
-		)
-	}
+	validate_options(&options)?;
 
 	// Determine the amount of sheets required:
 	// `front` and `back` must have the same amount of pages (precondition), thus it's enough
 	// to just load one of the two.
-	let pdfium = pdf::pdfium()?;
-	let front_pdf = pdfium.load_pdf_from_reader(front, None)?;
-	let sheets_num = front_pdf.pages().len();
-	let front = Cursor::new(front_pdf.save_to_bytes()?);
+	let (front, sheets_num) = get_number_of_pages(front)?;
+	let front = Cursor::new(front);
 	println!(
 		"You will need {} {} of paper.",
 		sheets_num.to_string().bold().cyan(),
@@ -75,4 +53,51 @@ where
 	printrs::print([back], printer, options)?;
 	println!("The back side has been submitted.");
 	Ok(())
+}
+
+/// Consumes an iterable collection and returns its first two elements as an owned value.
+/// If the collection has less than two elements, returns `None`.
+fn extract_first_two<I, T>(collection: I) -> Option<(T, T)>
+where
+	I: IntoIterator<Item = T>,
+{
+	let mut iter = collection.into_iter();
+	match (iter.next(), iter.next()) {
+		(Some(first), Some(second)) => Some((first, second)),
+		_ => None,
+	}
+}
+
+/// Validates `options` for compatibility with duplex printing mode.
+/// Returns `Ok` if the validation passed, and `Err` otherwise.
+fn validate_options(options: &PrintOptions) -> Result<()> {
+	if options.copies.is_some() {
+		bail!(
+			"option '{}' is not supported in duplex mode",
+			"copies".yellow()
+		)
+	} else if options.number_up.is_some() {
+		bail!(
+			"option '{}' is not supported in duplex mode",
+			"number up".yellow()
+		)
+	} else if options.sides_mode.is_some() {
+		bail!(
+			"option '{}' is not supported in duplex mode",
+			"sides mode".yellow()
+		)
+	}
+	Ok(())
+}
+
+/// Consumes a reader of a PDF document and returns a tuple containing its contents, serialized
+/// to bytes, as an owned value, and the amount of pages.
+fn get_number_of_pages<R>(reader: R) -> Result<(Vec<u8>, PdfPageIndex)>
+where
+	R: Read + Seek,
+{
+	let pdfium = pdf::pdfium()?;
+	let front_pdf = pdfium.load_pdf_from_reader(reader, None)?;
+	let sheets_num = front_pdf.pages().len();
+	Ok((front_pdf.save_to_bytes()?, sheets_num))
 }

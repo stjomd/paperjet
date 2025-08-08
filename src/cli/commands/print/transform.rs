@@ -9,7 +9,7 @@ use crate::cli::pdf;
 /// Designates a collection of raw untransformed documents.
 type OriginalDocuments<'a> = Vec<PdfDocument<'a>>;
 /// Designates a collection of transformed documents.
-pub type TransformedDocuments<'a> = Vec<PdfDocument<'a>>;
+type TransformedDocuments<'a> = Vec<PdfDocument<'a>>;
 /// Designates a collection of raw transformed files, i.e. a vector of vectors of bytes.
 pub type RawDocuments = Vec<Vec<u8>>;
 
