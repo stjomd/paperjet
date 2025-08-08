@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ffi::CString;
+use std::io::Read;
 use std::slice;
 
 use crate::error::PrintError;
@@ -30,7 +31,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 	fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
-		R: std::io::Read,
+		R: Read,
 	{
 		let id = CString::new(printer.identifier.clone())?;
 		let mut cups_dest = CupsDestination::new_by_name(&id)

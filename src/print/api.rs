@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::io;
+use std::io::Read;
 
 use crate::error::PrintError;
 use crate::options::PrintOptions;
@@ -24,7 +24,7 @@ pub fn get_default_printer() -> Option<Printer> {
 pub fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 where
 	I: IntoIterator<Item = R>,
-	R: io::Read,
+	R: Read,
 {
 	PlatformSpecificApi::print(readers, printer, options)
 }
@@ -50,13 +50,13 @@ pub trait CrossPlatformApi {
 	fn print<I, R>(readers: I, printer: Printer, options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
-		R: io::Read;
+		R: Read;
 }
 
 // MARK: - Structs
 
 /// A struct representing a printer.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Printer {
 	pub identifier: String,
 	pub name: String,

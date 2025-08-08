@@ -5,6 +5,7 @@ use crate::cli::args::{Args, Command};
 pub mod args;
 pub mod commands;
 mod common;
+mod pdf;
 mod snapshot;
 
 /// Runs the command specified in the [`Args`] instance.

@@ -1,4 +1,4 @@
-#![cfg(target_family = "unix")]
+#![cfg(unix)]
 
 mod utils;
 
