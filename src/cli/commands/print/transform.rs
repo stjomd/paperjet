@@ -41,14 +41,14 @@ pub fn transform(files: Vec<File>, args: &PrintArgs) -> Result<RawDocuments> {
 /// If any of `from` or `to` is `None`, they are treated as first or last page, respectively.
 fn slice<'a>(
 	pdfium: &'a Pdfium,
-	mut files: OriginalDocuments<'a>,
+	files: OriginalDocuments<'a>,
 	from: Option<PdfPageIndex>,
 	to: Option<PdfPageIndex>,
 ) -> Result<TransformedDocuments<'a>> {
 	if files.len() != 1 {
 		bail!("exactly one file must be specified to slice a document")
 	}
-	let source = files.remove(0);
+	let source = extract_first(files);
 	let sliced = pdf::slice::slice_document(pdfium, &source, from, to)?;
 	Ok(vec![sliced])
 }
@@ -56,12 +56,12 @@ fn slice<'a>(
 /// Splits the document into two, for each of the paper sides (front and back).
 fn split_for_duplex<'a>(
 	pdfium: &'a Pdfium,
-	mut files: OriginalDocuments<'a>,
+	files: OriginalDocuments<'a>,
 ) -> Result<TransformedDocuments<'a>> {
 	if files.len() != 1 {
 		bail!("exactly one file must be specified to print in duplex mode")
 	}
-	let source = files.remove(0);
+	let source = extract_first(files);
 	let (front, back) = pdf::split::split_pdf(pdfium, &source)?;
 	Ok(vec![front, back])
 }
@@ -75,4 +75,10 @@ fn files_to_raw<'a>(pdfium: &'a Pdfium, files: Vec<File>) -> Result<OriginalDocu
 			Err(e) => Err(anyhow!("could not read from file: {e}")),
 		})
 		.collect::<Result<OriginalDocuments>>()
+}
+
+/// Consumes the vector and returns the first value as an owned value.
+/// Panics if the vector has no elements.
+fn extract_first<T>(mut vec: Vec<T>) -> T {
+	vec.remove(0)
 }
