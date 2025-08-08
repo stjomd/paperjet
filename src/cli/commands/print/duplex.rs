@@ -96,13 +96,9 @@ fn get_number_of_pages<R>(reader: R) -> Result<(Vec<u8>, PdfPageIndex)>
 where
 	R: Read + Seek,
 {
-	println!("A");
 	let pdfium = pdf::pdfium()?;
-	println!("B");
 	let front_pdf = pdfium.load_pdf_from_reader(reader, None)?;
-	println!("C");
 	let sheets_num = front_pdf.pages().len();
-	println!("D");
 	Ok((front_pdf.save_to_bytes()?, sheets_num))
 }
 
