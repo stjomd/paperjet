@@ -96,8 +96,55 @@ fn get_number_of_pages<R>(reader: R) -> Result<(Vec<u8>, PdfPageIndex)>
 where
 	R: Read + Seek,
 {
+	println!("A");
 	let pdfium = pdf::pdfium()?;
+	println!("B");
 	let front_pdf = pdfium.load_pdf_from_reader(reader, None)?;
+	println!("C");
 	let sheets_num = front_pdf.pages().len();
+	println!("D");
 	Ok((front_pdf.save_to_bytes()?, sheets_num))
+}
+
+#[cfg(test)]
+mod tests {
+	use printrs::options::{CopiesInt, NumberUpInt, SidesMode};
+
+	use super::*;
+
+	#[test]
+	fn if_copies_is_set_then_options_invalid() {
+		// Set options with a defined copies parameter
+		let options = PrintOptions {
+			copies: Some(CopiesInt(1)),
+			..Default::default()
+		};
+
+		// Validation should fail
+		assert!(validate_options(&options).is_err());
+	}
+
+	#[test]
+	fn if_number_up_is_set_then_options_invalid() {
+		// Set options with a defined copies parameter
+		let options = PrintOptions {
+			number_up: Some(NumberUpInt(1)),
+			..Default::default()
+		};
+
+		// Validation should fail
+		assert!(validate_options(&options).is_err());
+	}
+
+	#[test]
+	fn if_sides_mode_is_set_then_options_invalid() {
+		// Set options with a defined copies parameter
+		let options = PrintOptions {
+			sides_mode: Some(SidesMode::TwoSidedLandscape),
+			..Default::default()
+		};
+
+		// Validation should fail
+		assert!(validate_options(&options).is_err());
+	}
 }
