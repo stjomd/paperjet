@@ -506,6 +506,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
+name = "paperjet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bindgen",
+ "clap",
+ "colored",
+ "dirs",
+ "pdfium-render",
+ "strum",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
 name = "pdfium-render"
 version = "0.8.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -545,22 +561,6 @@ checksum = "ff24dfcda44452b9816fff4cd4227e1bb73ff5a2f1bc1105aa92fb8565ce44d2"
 dependencies = [
  "proc-macro2",
  "syn",
-]
-
-[[package]]
-name = "printrs"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "bindgen",
- "clap",
- "colored",
- "dirs",
- "pdfium-render",
- "strum",
- "thiserror",
- "uuid",
 ]
 
 [[package]]

@@ -1,16 +1,29 @@
 [package]
-name = "printrs"
+name = "paperjet"
 version = "0.1.0"
 edition = "2024"
+description = "A printing library and CLI"
+readme = "README.md"
+repository = "https://github.com/stjomd/paperjet"
+license = "MIT"
+keywords = ["print", "printer", "cups", "pdf"]
+categories = ["multimedia"]
 
 [lib]
-name = "printrs"
+name = "paperjet"
 path = "src/lib.rs"
 doctest = false
 
 [[bin]]
-name = "printrs"
+name = "paperjet"
 path = "src/main.rs"
+publish = false
+
+[profile.release]
+opt-level = 3
+strip = "symbols"
+lto = "fat"
+codegen-units = 1
 
 [dependencies]
 anyhow = "1.0.98"
