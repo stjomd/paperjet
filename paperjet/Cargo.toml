@@ -5,7 +5,7 @@ edition = "2024"
 description = "A printing library"
 readme = "README.md"
 repository = "https://github.com/stjomd/paperjet"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 keywords = ["print", "printer", "cups", "pdf"]
 categories = ["multimedia"]
 
