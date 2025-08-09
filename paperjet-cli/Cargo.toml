@@ -8,7 +8,6 @@ publish = false
 [[bin]]
 name = "paperjet"
 path = "src/main.rs"
-publish = false
 
 [dependencies]
 paperjet = { path = "../paperjet" }
