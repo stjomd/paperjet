@@ -1,42 +1,9 @@
-[package]
-name = "paperjet"
-version = "0.1.0"
-edition = "2024"
-description = "A printing library and CLI"
-readme = "README.md"
-repository = "https://github.com/stjomd/paperjet"
-license = "MIT"
-keywords = ["print", "printer", "cups", "pdf"]
-categories = ["multimedia"]
-
-[lib]
-name = "paperjet"
-path = "src/lib.rs"
-doctest = false
-
-[[bin]]
-name = "paperjet"
-path = "src/main.rs"
-publish = false
+[workspace]
+resolver = "3"
+members = ["paperjet", "paperjet-cli"]
 
 [profile.release]
 opt-level = 3
 strip = "symbols"
 lto = "fat"
 codegen-units = 1
-
-[dependencies]
-anyhow = "1.0.98"
-bincode = "2.0.1"
-clap = { version = "4.5.42", features = ["color", "derive"] }
-colored = "3.0.0"
-dirs = "6.0.0"
-pdfium-render = "0.8.34"
-strum = { version = "0.27.2", features = ["derive"] }
-thiserror = "2.0.12"
-
-[dev-dependencies]
-uuid = { version = "1.17.0", features = ["v4"] }
-
-[build-dependencies]
-bindgen = "0.72.0"

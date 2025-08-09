@@ -1,0 +1,20 @@
+[package]
+name = "paperjet-cli"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[[bin]]
+name = "paperjet"
+path = "src/main.rs"
+publish = false
+
+[dependencies]
+paperjet = { path = "../paperjet" }
+anyhow = "1.0.98"
+bincode = "2.0.1"
+clap = { version = "4.5.42", features = ["color", "derive"] }
+colored = "3.0.0"
+dirs = "6.0.0"
+pdfium-render = "0.8.34"

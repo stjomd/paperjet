@@ -509,16 +509,24 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 name = "paperjet"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "bincode",
  "bindgen",
  "clap",
- "colored",
- "dirs",
- "pdfium-render",
  "strum",
  "thiserror",
  "uuid",
+]
+
+[[package]]
+name = "paperjet-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "clap",
+ "colored",
+ "dirs",
+ "paperjet",
+ "pdfium-render",
 ]
 
 [[package]]
