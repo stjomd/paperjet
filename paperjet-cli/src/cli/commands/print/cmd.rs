@@ -4,8 +4,8 @@ use std::path::PathBuf;
 
 use anyhow::{Result, anyhow};
 use colored::Colorize;
-use printrs::Printer;
-use printrs::options::PrintOptions;
+use paperjet::Printer;
+use paperjet::options::PrintOptions;
 
 use crate::cli::args::PrintArgs;
 use crate::cli::commands::print::{duplex, transform};
@@ -29,7 +29,7 @@ pub fn print(args: PrintArgs) -> Result<()> {
 
 	// Simplex mode: submit to print
 	let options = PrintOptions::from(&args);
-	printrs::print(documents, printer, options)?;
+	paperjet::print(documents, printer, options)?;
 	println!("Files have been submitted for printing.");
 
 	Ok(())
@@ -66,6 +66,6 @@ fn select_printer(args: &PrintArgs) -> Result<Printer> {
 			name.yellow()
 		))
 	} else {
-		printrs::get_default_printer().ok_or(anyhow!("no default printer is available"))
+		paperjet::get_default_printer().ok_or(anyhow!("no default printer is available"))
 	}
 }

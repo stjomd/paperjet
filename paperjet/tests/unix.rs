@@ -2,7 +2,7 @@
 
 mod utils;
 
-use printrs::options::PrintOptions;
+use paperjet::options::PrintOptions;
 
 use crate::utils::unixutils::FakePrinter;
 
@@ -15,7 +15,7 @@ fn if_many_printers_exist_then_get_printers_returns_all() {
 		FakePrinter::try_new(false).expect("Could not create a fake printer"),
 	];
 	// Get all printers:
-	let printers = printrs::get_printers();
+	let printers = paperjet::get_printers();
 
 	// Each of the fake printers must be present in the vector returned by get_printers.
 	// Since other printers may be present on the test runner's system, we can't make any other
@@ -35,7 +35,7 @@ fn get_printer_returns_correct_information_of_printer() {
 	// Create a fake printer:
 	let fake = FakePrinter::try_new(false).expect("Could not create a fake printer");
 	// Get information:
-	let printer = printrs::get_printer(&fake.name).expect("Could not find the fake printer");
+	let printer = paperjet::get_printer(&fake.name).expect("Could not find the fake printer");
 
 	// The fake printer should have correct information:
 	assert_eq!(printer.name, fake.name);
@@ -58,7 +58,7 @@ fn if_printer_exists_then_get_printer_returns_correct_printer() {
 	// Create a fake printer:
 	let fake = FakePrinter::try_new(false).expect("Could not create a fake printer");
 	// Get printer with the fake's name:
-	let printer = printrs::get_printer(&fake.name).expect("Could not find printer by name");
+	let printer = paperjet::get_printer(&fake.name).expect("Could not find printer by name");
 
 	// get_printer should return the correct printer with the same name:
 	assert_eq!(
@@ -77,7 +77,7 @@ fn if_printer_not_exists_then_get_printer_returns_none() {
 		fake.name.clone()
 	};
 	// Get printer with the fake's name that does not exist anymore:
-	let printer = printrs::get_printer(&fake_name);
+	let printer = paperjet::get_printer(&fake_name);
 	assert!(
 		printer.is_none(),
 		"Printer was dropped/removed but was found"
@@ -92,9 +92,9 @@ fn if_printer_accepts_jobs_then_print_returns_unit() {
 	let document = [0u8; 1024];
 
 	// Get the printer:
-	let printer = printrs::get_printer(&fake.name).expect("Could not find the fake printer");
+	let printer = paperjet::get_printer(&fake.name).expect("Could not find the fake printer");
 	// Submit print job:
-	let result = printrs::print([&document[..]], printer, PrintOptions::default());
+	let result = paperjet::print([&document[..]], printer, PrintOptions::default());
 	assert!(
 		result.is_ok(),
 		"Print job should be submitted successfully, but wasn't"
@@ -109,9 +109,9 @@ fn if_printer_not_accepts_jobs_then_print_returns_err() {
 	let document = [0u8; 1024];
 
 	// Get the printer:
-	let printer = printrs::get_printer(&fake.name).expect("Could not find the fake printer");
+	let printer = paperjet::get_printer(&fake.name).expect("Could not find the fake printer");
 	// Submit print job:
-	let result = printrs::print([&document[..]], printer, PrintOptions::default());
+	let result = paperjet::print([&document[..]], printer, PrintOptions::default());
 	assert!(result.is_err(), "Print job should not be accepted, but was");
 }
 
@@ -122,11 +122,11 @@ fn if_printer_no_longer_exists_then_print_returns_err() {
 	// Create a mock document:
 	let document = [0u8; 1024];
 	// Get the printer:
-	let printer = printrs::get_printer(&fake.name).expect("Could not find the fake printer");
+	let printer = paperjet::get_printer(&fake.name).expect("Could not find the fake printer");
 	// Remove printer:
 	drop(fake);
 
 	// Submit print job:
-	let result = printrs::print([&document[..]], printer, PrintOptions::default());
+	let result = paperjet::print([&document[..]], printer, PrintOptions::default());
 	assert!(result.is_err(), "Print job should not be accepted, but was");
 }

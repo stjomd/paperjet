@@ -11,7 +11,7 @@ pub struct FakePrinter {
 impl FakePrinter {
 	/// Creates a new printer in the system with a random name and a URI to `/dev/null`.
 	pub fn try_new(accept_jobs: bool) -> Result<Self, std::io::Error> {
-		let name = "printrs-test-".to_owned() + &uuid::Uuid::new_v4().to_string();
+		let name = "paperjet-test-".to_owned() + &uuid::Uuid::new_v4().to_string();
 		let device_uri = "file:/dev/null".to_owned();
 
 		let mut args = vec!["-p", &name, "-v", &device_uri];

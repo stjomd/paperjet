@@ -5,7 +5,7 @@ use std::time::Duration;
 use anyhow::Result;
 
 pub mod printers {
-	use printrs::Printer;
+	use paperjet::Printer;
 
 	use super::*;
 

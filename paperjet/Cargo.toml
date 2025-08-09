@@ -1,0 +1,26 @@
+[package]
+name = "paperjet"
+version = "0.1.0"
+edition = "2024"
+description = "A printing library"
+readme = "README.md"
+repository = "https://github.com/stjomd/paperjet"
+license = "MIT OR Apache-2.0"
+keywords = ["print", "printer", "cups", "pdf"]
+categories = ["multimedia"]
+
+[lib]
+name = "paperjet"
+path = "src/lib.rs"
+doctest = false
+
+[dependencies]
+clap = { version = "4.5.42", features = ["color", "derive"] }
+strum = { version = "0.27.2", features = ["derive"] }
+thiserror = "2.0.12"
+
+[dev-dependencies]
+uuid = { version = "1.17.0", features = ["v4"] }
+
+[build-dependencies]
+bindgen = "0.72.0"

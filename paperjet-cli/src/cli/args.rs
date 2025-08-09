@@ -2,7 +2,7 @@ use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap::{ArgAction, Parser, Subcommand};
 use pdfium_render::prelude::PdfPageIndex;
-use printrs::options::{
+use paperjet::options::{
 	ColorMode, Finishing, MediaSize, MediaSource, MediaType, Orientation, Quality, SidesMode,
 };
 use std::ffi::c_int;

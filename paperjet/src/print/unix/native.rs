@@ -41,7 +41,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			PrintError::NecessaryInformationMissing(String::from("no CUPS destination info")),
 		)?;
 		let cups_opts = add_options(options, &mut cups_dest, &mut cups_info)?;
-		let mut cups_job = CupsJob::try_new("printrs", cups_dest, cups_info, cups_opts)?;
+		let mut cups_job = CupsJob::try_new("paperjet", cups_dest, cups_info, cups_opts)?;
 
 		cups_job.add_documents(readers)?;
 		cups_job.print()

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{Result, anyhow};
 use colored::Colorize;
-use printrs::Printer;
+use paperjet::Printer;
 
 use crate::cli::args::DisplayArgs;
 use crate::cli::common;
