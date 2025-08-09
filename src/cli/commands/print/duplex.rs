@@ -2,9 +2,9 @@ use std::io::{self, Cursor, Read, Seek, Write};
 
 use anyhow::{Result, anyhow, bail};
 use colored::Colorize;
+use paperjet::Printer;
+use paperjet::options::PrintOptions;
 use pdfium_render::prelude::*;
-use printrs::Printer;
-use printrs::options::PrintOptions;
 
 use crate::cli::args::PrintArgs;
 use crate::cli::pdf;
@@ -38,7 +38,7 @@ where
 
 	// Start interactions
 	println!("\nPrinting the front side...");
-	printrs::print([front], printer.clone(), options.clone())?;
+	paperjet::print([front], printer.clone(), options.clone())?;
 	println!("The front side has been submitted.");
 
 	print!(
@@ -50,7 +50,7 @@ where
 	io::stdin().read_line(&mut input)?;
 
 	println!("\nPrinting the back side...");
-	printrs::print([back], printer, options)?;
+	paperjet::print([back], printer, options)?;
 	println!("The back side has been submitted.");
 	Ok(())
 }
@@ -104,7 +104,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use printrs::options::{CopiesInt, NumberUpInt, SidesMode};
+	use paperjet::options::{CopiesInt, NumberUpInt, SidesMode};
 
 	use super::*;
 

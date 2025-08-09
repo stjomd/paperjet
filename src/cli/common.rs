@@ -1,14 +1,14 @@
 use std::cmp::Ordering;
 
-use printrs::Printer;
-use printrs::options::{CopiesInt, NumberUpInt, PrintOptions};
+use paperjet::Printer;
+use paperjet::options::{CopiesInt, NumberUpInt, PrintOptions};
 
 use crate::cli::args::PrintArgs;
 use crate::cli::snapshot;
 
 /// Returns printers in a sorted order.
 pub fn get_sorted_printers() -> Vec<Printer> {
-	let mut printers = printrs::get_printers();
+	let mut printers = paperjet::get_printers();
 	printers.sort_by(|a, b| {
 		if a.is_default {
 			return Ordering::Less;
@@ -31,7 +31,7 @@ pub fn get_printer_by_id(id: usize) -> Option<Printer> {
 fn get_printer_by_id_from_snapshot(index: usize) -> Option<Printer> {
 	let snapshot = snapshot::printers::open()?;
 	let entry = snapshot.get(index)?;
-	printrs::get_printer(&entry.identifier)
+	paperjet::get_printer(&entry.identifier)
 }
 /// Retrieves all printers from backend, then returns the printer with the specified index,
 /// if present.
@@ -58,11 +58,11 @@ fn get_printer_by_name_from_snapshot(name: &str) -> Option<Printer> {
 			.iter()
 			.find(|snap| snap.human_name.to_lowercase() == name.to_lowercase())
 	})?;
-	printrs::get_printer(&entry.identifier)
+	paperjet::get_printer(&entry.identifier)
 }
 // Retrieves the printer corresponding to the specified `name` from the API.
 fn get_printer_by_name_from_api(name: &str) -> Option<Printer> {
-	let printers = printrs::get_printers();
+	let printers = paperjet::get_printers();
 	printers.into_iter().find(|p| {
 		p.identifier == name
 			|| p.name.to_lowercase() == name.to_lowercase()
