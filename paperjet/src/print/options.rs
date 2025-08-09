@@ -77,7 +77,7 @@ impl PrintOption for NumberUpInt {
 	}
 }
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum Finishing {
 	Bind,
@@ -101,7 +101,7 @@ impl PrintOption for Vec<Finishing> {
 	}
 }
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum MediaSize {
 	// ISO & A3+
@@ -125,7 +125,7 @@ pub enum MediaSize {
 }
 impl_print_option!(MediaSize => "Media Size");
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum MediaSource {
 	Auto,
@@ -133,7 +133,7 @@ pub enum MediaSource {
 }
 impl_print_option!(MediaSource => "Media Source");
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum MediaType {
 	Auto,
@@ -148,7 +148,7 @@ pub enum MediaType {
 }
 impl_print_option!(MediaType => "Media Type");
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum Orientation {
 	Portrait,
@@ -156,7 +156,7 @@ pub enum Orientation {
 }
 impl_print_option!(Orientation => "Orientation");
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum ColorMode {
 	Auto,
@@ -165,7 +165,7 @@ pub enum ColorMode {
 }
 impl_print_option!(ColorMode => "Color Mode");
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum Quality {
 	Draft,
@@ -174,7 +174,7 @@ pub enum Quality {
 }
 impl_print_option!(Quality => "Quality");
 
-#[derive(Clone, Copy, Debug, clap::ValueEnum, strum::Display)]
+#[derive(Clone, Copy, Debug, strum::Display, strum::EnumString, strum::VariantNames)]
 #[strum(serialize_all = "kebab-case")]
 pub enum SidesMode {
 	OneSided,
