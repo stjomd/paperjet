@@ -9,11 +9,13 @@ use std::ffi::c_int;
 use std::path::PathBuf;
 
 /// Constructs a parser for foreign enums (that we can't implement [`clap::ValueEnum`] for).
-/// The enum must implement [`std::str::FromStr`] and [`strum::VariantNames`].
+/// The enum must implement [`std::str::FromStr`] and [`paperjet::options::PrintOptionVariants`].
 macro_rules! possible_values_parser {
-	($t:ty) => {{
-		let p = clap::builder::PossibleValuesParser::new(<$t as strum::VariantNames>::VARIANTS);
-		clap::builder::TypedValueParser::map(p, |s| s.parse::<$t>().unwrap())
+	($type:ty) => {{
+		let parser = clap::builder::PossibleValuesParser::new(
+			<$type as paperjet::options::PrintOptionVariants>::variants(),
+		);
+		clap::builder::TypedValueParser::map(parser, |string| string.parse::<$type>().unwrap())
 	}};
 }
 
