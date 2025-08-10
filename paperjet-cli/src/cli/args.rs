@@ -1,12 +1,23 @@
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
-use clap::{ArgAction, Parser, Subcommand};
-use pdfium_render::prelude::PdfPageIndex;
+use clap::{ArgAction, Parser, Subcommand, value_parser};
 use paperjet::options::{
 	ColorMode, Finishing, MediaSize, MediaSource, MediaType, Orientation, Quality, SidesMode,
 };
+use pdfium_render::prelude::PdfPageIndex;
 use std::ffi::c_int;
 use std::path::PathBuf;
+
+/// Constructs a parser for foreign enums (that we can't implement [`clap::ValueEnum`] for).
+/// The enum must implement [`std::str::FromStr`] and [`paperjet::options::PrintOptionVariants`].
+macro_rules! possible_values_parser {
+	($type:ty) => {{
+		let parser = clap::builder::PossibleValuesParser::new(
+			<$type as paperjet::options::PrintOptionVariants>::variants(),
+		);
+		clap::builder::TypedValueParser::map(parser, |string| string.parse::<$type>().unwrap())
+	}};
+}
 
 mod headings {
 	pub const DEVICES: &str = "Devices";
@@ -104,25 +115,45 @@ pub struct PrintArgs {
 	#[arg(
 		short,
 		long,
-		value_parser = clap::value_parser!(c_int).range(1..),
+		value_parser = value_parser!(c_int).range(1..),
 		help_heading = headings::PRINT_OPTS
 	)]
 	pub copies: Option<c_int>,
 
 	/// Finishing processes to be performed by the printer.
-	#[arg(long, value_delimiter = ',', help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		long,
+		value_delimiter = ',',
+		value_parser = possible_values_parser!(Finishing),
+		help_heading = headings::PRINT_OPTS
+	)]
 	pub finishings: Option<Vec<Finishing>>,
 
 	/// Size of the media, most often paper size.
-	#[arg(short, long, help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		short,
+		long,
+		value_parser = possible_values_parser!(MediaSize),
+		help_heading = headings::PRINT_OPTS
+	)]
 	pub size: Option<MediaSize>,
 
 	/// Source where the media is pulled from.
-	#[arg(short = 'r', long, help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		short = 'r',
+		long,
+		value_parser = possible_values_parser!(MediaSource),
+		help_heading = headings::PRINT_OPTS
+	)]
 	pub source: Option<MediaSource>,
 
 	/// Type of media.
-	#[arg(long, value_name = "TYPE", help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		long,
+		value_name = "TYPE",
+		value_parser = possible_values_parser!(MediaType),
+		help_heading = headings::PRINT_OPTS
+	)]
 	pub media_type: Option<MediaType>,
 
 	/// Number of document pages per media side [default: 1]
@@ -130,25 +161,46 @@ pub struct PrintArgs {
 		short = 'u',
 		long,
 		value_name = "PAGES",
-		value_parser = clap::value_parser!(c_int).range(1..),
+		value_parser = value_parser!(c_int).range(1..),
 		help_heading = headings::PRINT_OPTS
 	)]
 	pub number_up: Option<c_int>,
 
 	/// Orientation of document pages.
-	#[arg(short, long, help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		short,
+		long,
+		value_parser = possible_values_parser!(Orientation),
+		help_heading = headings::PRINT_OPTS
+	)]
 	pub orientation: Option<Orientation>,
 
 	/// Determines whether the printer should use color or monochrome ink.
-	#[arg(short = 'm', long, help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		short = 'm',
+		long,
+		value_parser = possible_values_parser!(ColorMode),
+		help_heading = headings::PRINT_OPTS
+	)]
 	pub color_mode: Option<ColorMode>,
 
 	/// The quality of the resulting print.
-	#[arg(short, long, value_name = "MODE", help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		short,
+		long,
+		value_name = "MODE",
+		value_parser = possible_values_parser!(Quality),
+		help_heading = headings::PRINT_OPTS
+	)]
 	pub quality: Option<Quality>,
 
 	/// Determines whether only one or both sides of the media should be printed on.
-	#[arg(short = 'i', value_name = "MODE", long, help_heading = headings::PRINT_OPTS)]
+	#[arg(
+		short = 'i',
+		long,
+		value_name = "MODE",
+		value_parser = possible_values_parser!(SidesMode),
+		help_heading = headings::PRINT_OPTS)]
 	pub sides_mode: Option<SidesMode>,
 }
 
