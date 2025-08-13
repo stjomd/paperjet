@@ -58,7 +58,10 @@ impl<'a> IntoIterator for &'a mut CupsDestinations {
 		// by CUPS, and remains valid until `cupsFreeDests` is called, which happens on drop.
 		unsafe {
 			let slice = self.0.as_slice_mut();
-			slice.iter_mut().map(|refr| CupsDestination::new(refr))
+			slice.iter_mut().map(|refr| CupsDestination {
+				ptr: refr,
+				marker: PhantomData,
+			})
 		}
 	}
 }
@@ -70,37 +73,24 @@ pub struct CupsDestination<'a> {
 	marker: PhantomData<&'a CupsDestinations>,
 }
 impl<'a> CupsDestination<'a> {
-	/// Wraps a valid destination in this struct.
-	///
-	/// # Safety
-	/// `dest` must be a valid reference pointing to a [`cups::cups_dest_t`] managed by CUPS.
-	unsafe fn new(dest: &'a mut cups::cups_dest_t) -> Self {
-		Self {
-			ptr: dest,
-			marker: PhantomData,
-		}
-	}
 	/// Retrieves a destination by its name.
 	pub fn new_by_name(name: &CStr) -> Option<Self> {
 		// SAFETY: `cupsGetNamedDest` accepts null pointers for any of the parameters, and returns
 		// a valid pointer to a destination if it is found, or a null pointer otherwise.
-		let dest = unsafe {
+		let ptr = unsafe {
 			cups::cupsGetNamedDest(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
 				name.as_ptr(),
 				ptr::null(),
 			)
 		};
-		if dest.is_null() {
+		if ptr.is_null() {
 			None
 		} else {
-			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
-			// a null pointer, and the null pointer has been checked in the previous branch,
-			// therefore this is a valid pointer and can be safely casted to a reference.
-			unsafe {
-				let reference = &mut *dest;
-				Some(Self::new(reference))
-			}
+			Some(Self {
+				ptr,
+				marker: PhantomData,
+			})
 		}
 	}
 	/// Retrieves the default destination.
@@ -108,23 +98,20 @@ impl<'a> CupsDestination<'a> {
 		// SAFETY: `cupsGetNamedDest` accepts null pointers for any of the parameters, and returns
 		// a valid pointer to a destination if it is found, or a null pointer otherwise.
 		// In this case, since `name` is `ptr::null()`, the default destination will be returned.
-		let dest = unsafe {
+		let ptr = unsafe {
 			cups::cupsGetNamedDest(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
 				ptr::null(),
 				ptr::null(),
 			)
 		};
-		if dest.is_null() {
+		if ptr.is_null() {
 			None
 		} else {
-			// SAFETY: since `cupsGetNamedDest` returns either a valid pointer to a `cups_dest_t` or
-			// a null pointer, and the null pointer has been checked in the previous branch,
-			// therefore this is a valid pointer and can be safely casted to a reference.
-			unsafe {
-				let reference = &mut *dest;
-				Some(Self::new(reference))
-			}
+			Some(Self {
+				ptr,
+				marker: PhantomData,
+			})
 		}
 	}
 	// Returns the raw mutable pointer to this destination.
