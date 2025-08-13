@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
-use std::ops::DerefMut;
 use std::ptr;
 
 use crate::options::*;
@@ -60,7 +59,7 @@ impl CupsOptions {
 		let result = unsafe {
 			cups::cupsCheckDestSupported(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
-				destination.deref_mut(),
+				destination.as_mut_ptr(),
 				info.as_mut_ptr(),
 				O::get_cups_option_name().as_ptr(),
 				option.get_cups_option_value().as_ptr(),

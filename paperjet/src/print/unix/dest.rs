@@ -1,4 +1,5 @@
 use std::ffi::CStr;
+use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::ptr;
@@ -74,14 +75,20 @@ impl<'a> IntoIterator for &'a mut CupsDestinations {
 
 // MARK: - Destination
 
-pub struct CupsDestination<'a>(&'a mut cups::cups_dest_t);
+pub struct CupsDestination<'a> {
+	ptr: *mut cups::cups_dest_t,
+	marker: PhantomData<&'a CupsDestinations>,
+}
 impl<'a> CupsDestination<'a> {
 	/// Wraps a valid destination in this struct.
 	///
 	/// # Safety
 	/// `dest` must be a valid reference pointing to a [`cups::cups_dest_t`] managed by CUPS.
 	unsafe fn new(dest: &'a mut cups::cups_dest_t) -> Self {
-		Self(dest)
+		Self {
+			ptr: dest,
+			marker: PhantomData,
+		}
 	}
 	/// Retrieves a destination by its name.
 	pub fn new_by_name(name: &CStr) -> Option<Self> {
@@ -130,16 +137,24 @@ impl<'a> CupsDestination<'a> {
 			}
 		}
 	}
+	// Returns the raw mutable pointer to this destination.
+	pub fn as_mut_ptr(&mut self) -> *mut cups::cups_dest_t {
+		self.ptr
+	}
 }
 impl<'a> Deref for CupsDestination<'a> {
 	type Target = cups::cups_dest_t;
 	fn deref(&self) -> &Self::Target {
-		self.0
+		// SAFETY: the only safe ways to construct `CupsDestination<'a>` obtain a valid pointer from
+		// CUPS, thus dereferencing is safe.
+		unsafe { &*self.ptr }
 	}
 }
 impl<'a> DerefMut for CupsDestination<'a> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
-		self.0
+		// SAFETY: the only safe ways to construct `CupsDestination<'a>` obtain a valid pointer from
+		// CUPS, thus dereferencing is safe.
+		unsafe { &mut *self.ptr }
 	}
 }
 
@@ -157,7 +172,7 @@ impl CupsDestinationInfo {
 		let ptr = unsafe {
 			cups::cupsCopyDestInfo(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
-				destination.deref_mut(),
+				destination.as_mut_ptr(),
 			)
 		};
 		if ptr.is_null() {

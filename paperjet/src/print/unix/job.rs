@@ -4,7 +4,6 @@ use crate::print::unix::dest::{CupsDestination, CupsDestinationInfo};
 use crate::print::unix::options::CupsOptions;
 use crate::print::util;
 use std::io::BufRead;
-use std::ops::DerefMut;
 use std::{ffi, io};
 
 /// The size of the buffer that is used for transfer to CUPS.
@@ -120,7 +119,7 @@ fn create_job(title: &str, context: &mut JobContext) -> Result<ffi::c_int, Print
 	let status = unsafe {
 		cups::cupsCreateDestJob(
 			context.http,
-			context.destination.deref_mut(),
+			context.destination.as_mut_ptr(),
 			context.info.as_mut_ptr(),
 			&mut job_id,
 			title.as_ptr(),
@@ -147,7 +146,7 @@ fn start_upload(
 	let status = unsafe {
 		cups::cupsStartDestDocument(
 			context.http,
-			context.destination.deref_mut(),
+			context.destination.as_mut_ptr(),
 			context.info.as_mut_ptr(),
 			job_id,
 			filename.as_ptr(),
@@ -201,7 +200,7 @@ fn finish_upload(context: &mut JobContext) -> Result<(), PrintError> {
 	let status = unsafe {
 		cups::cupsFinishDestDocument(
 			context.http,
-			context.destination.deref_mut(),
+			context.destination.as_mut_ptr(),
 			context.info.as_mut_ptr(),
 		)
 	};
@@ -216,7 +215,7 @@ fn cancel_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintE
 	// SAFETY: `context` contains safe wrappers over CUPS bindings (and `http`, which can be a null
 	// pointer), and thus all pointers passed into `cupsCancelDestJob` are safe.
 	let status =
-		unsafe { cups::cupsCancelDestJob(context.http, context.destination.deref_mut(), job_id) };
+		unsafe { cups::cupsCancelDestJob(context.http, context.destination.as_mut_ptr(), job_id) };
 	if status != cups::ipp_status_e::IPP_STATUS_OK {
 		return Err(get_last_error());
 	}
@@ -230,7 +229,7 @@ fn close_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintEr
 	let status = unsafe {
 		cups::cupsCloseDestJob(
 			context.http,
-			context.destination.deref_mut(),
+			context.destination.as_mut_ptr(),
 			context.info.as_mut_ptr(),
 			job_id,
 		)
