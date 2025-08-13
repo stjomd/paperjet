@@ -34,15 +34,6 @@ impl CupsDestinations {
 			ptr: dests_ptr,
 		})
 	}
-	pub fn get(&'_ mut self, index: usize) -> Option<CupsDestination<'_>> {
-		// SAFETY: `self.0` is a valid fat pointer, pointing to memory allocated by CUPS.
-		// It remains valid until `cupsFreeDests` is called, which happens on drop.
-		unsafe {
-			let ptr = self.0.get_at(index)?;
-			let reference = &mut *ptr;
-			Some(CupsDestination::new(reference))
-		}
-	}
 }
 impl Drop for CupsDestinations {
 	fn drop(&mut self) {
@@ -188,27 +179,5 @@ impl Drop for CupsDestinationInfo {
 	fn drop(&mut self) {
 		// SAFETY: `self.ptr` is a valid pointer returned by CUPS and obtained in `Self::new`.
 		unsafe { cups::cupsFreeDestInfo(self.0) };
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use crate::print::unix::cups;
-	use crate::print::unix::dest::CupsDestinations;
-	use crate::print::util::FatPointerMut;
-
-	#[test]
-	fn if_no_destinations_then_get_always_none() {
-		// This CUPS dests array is empty:
-		let mut dests = [];
-		let fptr: FatPointerMut<cups::cups_dest_t> = FatPointerMut {
-			size: dests.len() as _,
-			ptr: &mut dests as _,
-		};
-		let mut cups_destinations = CupsDestinations(fptr);
-		// Any call to .get() should return None:
-		assert!(cups_destinations.get(0).is_none());
-		assert!(cups_destinations.get(1).is_none());
-		assert!(cups_destinations.get(usize::MAX).is_none());
 	}
 }
