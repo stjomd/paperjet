@@ -18,6 +18,7 @@ pub struct CupsOptions {
 }
 impl CupsOptions {
 	/// Creates a new, empty list of CUPS options.
+	#[allow(clippy::new_without_default)]
 	pub fn new() -> Self {
 		Self {
 			opts: FatPointerMut {

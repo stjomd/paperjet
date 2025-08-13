@@ -7,4 +7,4 @@ pub mod options;
 mod util;
 
 #[cfg(unix)]
-mod unix;
+pub mod unix;
