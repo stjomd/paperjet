@@ -18,21 +18,6 @@ impl<T> FatPointerMut<T> {
 		// SAFETY: precondition requires the pointer and the size are valid.
 		unsafe { std::slice::from_raw_parts_mut(self.ptr, self.size as usize) }
 	}
-	/// Returns the element at position `index`.
-	/// The pointer and the size must be valid.
-	///
-	/// # Safety
-	/// The fat pointer must be a valid pointer; point to memory of type [`T`]; and the size
-	/// must be valid.
-	pub unsafe fn get_at(&self, index: usize) -> Option<*mut T> {
-		if self.is_null() || index >= self.size as usize {
-			None
-		} else {
-			// SAFETY: validity and index have been checked in the previous branch.
-			let ptr = unsafe { self.ptr.add(index) };
-			Some(ptr)
-		}
-	}
 	/// Returns `true` if this fat pointer has size 0, or points to null, and `false` otherwise.
 	pub fn is_null(&self) -> bool {
 		self.size == 0 || self.ptr.is_null()

@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
-use std::ops::DerefMut;
 use std::ptr;
 
 use crate::options::*;
@@ -19,6 +18,7 @@ pub struct CupsOptions {
 }
 impl CupsOptions {
 	/// Creates a new, empty list of CUPS options.
+	#[allow(clippy::new_without_default)]
 	pub fn new() -> Self {
 		Self {
 			opts: FatPointerMut {
@@ -60,8 +60,8 @@ impl CupsOptions {
 		let result = unsafe {
 			cups::cupsCheckDestSupported(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
-				destination.deref_mut(),
-				info.deref_mut(),
+				destination.as_mut_ptr(),
+				info.as_mut_ptr(),
 				O::get_cups_option_name().as_ptr(),
 				option.get_cups_option_value().as_ptr(),
 			)
