@@ -1,0 +1,9 @@
+error[E0597]: `destinations` does not live long enough
+ --> tests/trybuild/dest_lifetimes.rs:4:3
+  |
+3 |         let mut destinations = paperjet::unix::dest::CupsDestinations::new();
+  |             ---------------- binding `destinations` declared here
+4 |         destinations.into_iter().next().unwrap()
+  |         ^^^^^^^^^^^^ borrowed value does not live long enough
+5 |     };
+  |     - `destinations` dropped here while still borrowed
