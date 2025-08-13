@@ -61,7 +61,7 @@ impl CupsOptions {
 			cups::cupsCheckDestSupported(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
 				destination.deref_mut(),
-				info.deref_mut(),
+				info.as_mut_ptr(),
 				O::get_cups_option_name().as_ptr(),
 				option.get_cups_option_value().as_ptr(),
 			)

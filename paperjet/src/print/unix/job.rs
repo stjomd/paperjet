@@ -15,12 +15,12 @@ pub struct JobContext<'a> {
 	http: *mut cups::http_t,
 	options: CupsOptions,
 	destination: CupsDestination<'a>,
-	info: CupsDestinationInfo<'a>,
+	info: CupsDestinationInfo,
 }
 impl<'a> JobContext<'a> {
 	pub fn new(
 		destination: CupsDestination<'a>,
-		info: CupsDestinationInfo<'a>,
+		info: CupsDestinationInfo,
 		options: CupsOptions,
 	) -> Self {
 		Self {
@@ -51,7 +51,7 @@ impl<'a> CupsJob<'a> {
 	pub fn try_new(
 		title: &str,
 		dest: CupsDestination<'a>,
-		info: CupsDestinationInfo<'a>,
+		info: CupsDestinationInfo,
 		opts: CupsOptions,
 	) -> Result<Self, PrintError> {
 		let mut context = JobContext::new(dest, info, opts);
@@ -121,7 +121,7 @@ fn create_job(title: &str, context: &mut JobContext) -> Result<ffi::c_int, Print
 		cups::cupsCreateDestJob(
 			context.http,
 			context.destination.deref_mut(),
-			context.info.deref_mut(),
+			context.info.as_mut_ptr(),
 			&mut job_id,
 			title.as_ptr(),
 			context.options.as_fat_ptr_mut().size,
@@ -148,7 +148,7 @@ fn start_upload(
 		cups::cupsStartDestDocument(
 			context.http,
 			context.destination.deref_mut(),
-			context.info.deref_mut(),
+			context.info.as_mut_ptr(),
 			job_id,
 			filename.as_ptr(),
 			cups::consts::format::CUPS_FORMAT_AUTO.as_ptr(),
@@ -202,7 +202,7 @@ fn finish_upload(context: &mut JobContext) -> Result<(), PrintError> {
 		cups::cupsFinishDestDocument(
 			context.http,
 			context.destination.deref_mut(),
-			context.info.deref_mut(),
+			context.info.as_mut_ptr(),
 		)
 	};
 	if status != cups::ipp_status_e::IPP_STATUS_OK {
@@ -231,7 +231,7 @@ fn close_job(job_id: ffi::c_int, context: &mut JobContext) -> Result<(), PrintEr
 		cups::cupsCloseDestJob(
 			context.http,
 			context.destination.deref_mut(),
-			context.info.deref_mut(),
+			context.info.as_mut_ptr(),
 			job_id,
 		)
 	};

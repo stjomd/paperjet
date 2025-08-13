@@ -145,12 +145,15 @@ impl<'a> DerefMut for CupsDestination<'a> {
 
 // MARK: - Destination Info
 
+// Destination info lifetime seems to be detached from the destination itself, also implied
+// by the function name `cupsCopyDestInfo` and the fact we have to free it manually.
+
 /// A struct representing CUPS information for a particular destination.
-pub struct CupsDestinationInfo<'a>(&'a mut cups::cups_dinfo_t);
-impl<'a> CupsDestinationInfo<'a> {
+pub struct CupsDestinationInfo(*mut cups::cups_dinfo_t);
+impl CupsDestinationInfo {
 	/// Retrieves destination info from CUPS and wraps the pointer in this struct.
 	pub fn new(destination: &mut CupsDestination) -> Option<Self> {
-		// SAFETY: `destination` is wrapped in CupsDestination, and thus contains a valid reference.
+		// SAFETY: `destination` is wrapped in CupsDestination, and thus contains a valid pointer.
 		let ptr = unsafe {
 			cups::cupsCopyDestInfo(
 				cups::consts::http::CUPS_HTTP_DEFAULT,
@@ -160,27 +163,17 @@ impl<'a> CupsDestinationInfo<'a> {
 		if ptr.is_null() {
 			return None;
 		}
-		// SAFETY: `cupsCopyDestInfo` might return a null pointer, which was checked above.
-		// Thus at this point, the pointer is valid, and can be casted to a reference.
-		let reference = unsafe { &mut *ptr };
-		Some(CupsDestinationInfo(reference))
+		Some(CupsDestinationInfo(ptr))
+	}
+	/// Returns the raw mutable pointer to the destination info instance.
+	pub fn as_mut_ptr(&mut self) -> *mut cups::cups_dinfo_t {
+		self.0
 	}
 }
-impl<'a> Drop for CupsDestinationInfo<'a> {
+impl Drop for CupsDestinationInfo {
 	fn drop(&mut self) {
-		// SAFETY: `self.0` is a valid pointer returned by CUPS and obtained in `Self::new`.
+		// SAFETY: `self.ptr` is a valid pointer returned by CUPS and obtained in `Self::new`.
 		unsafe { cups::cupsFreeDestInfo(self.0) };
-	}
-}
-impl<'a> Deref for CupsDestinationInfo<'a> {
-	type Target = cups::cups_dinfo_t;
-	fn deref(&self) -> &Self::Target {
-		self.0
-	}
-}
-impl<'a> DerefMut for CupsDestinationInfo<'a> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		self.0
 	}
 }
 
