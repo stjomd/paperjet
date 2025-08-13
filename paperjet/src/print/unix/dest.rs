@@ -7,14 +7,13 @@ use std::ptr;
 use crate::print::unix::cups;
 use crate::print::util::FatPointerMut;
 
-// NOTE: the point of these structs/wrappers is to adapt unsafe bindings to safe Rust types.
-// It is IMPORTANT that these structs do not rely on caller input during initialization if
-// performing unsafe operations. They also MUST NOT mutably expose their contents.
+// NOTE: this file contains safe wrappers for unsafe CUPS bindings.
 //
-// CupsDestinations<'a> 'contains' any number of CupsDestination<'a>, passing down the lifetime,
-// so that a CupsDestination doesn't outlive its parent CupsDestinations.
+// These structs should not mutably expose their direct contents (i.e. it should not be possible
+// to overwrite a pointer stored in one of these structs).
 //
-// These structs MUST only expose safe constructors that do not accept references or pointers.
+// Where appropriate, lifetimes are tied (CupsDestination cannot outlive CupsDestinations for
+// example, if we use the get method on CupsDestinations).
 
 // MARK: - Destinations Array
 
