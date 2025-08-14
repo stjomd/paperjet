@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 use std::{borrow, ffi};
 
 /// A mutable pointer along with a size (useful for dynamic arrays).
