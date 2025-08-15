@@ -10,8 +10,8 @@ use crate::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
 impl CrossPlatformApi for PlatformSpecificApi {
 	fn get_printers() -> Vec<Printer> {
-		let mut buf_size = 0u32;
-		let mut printers_len = 0u32;
+		let mut buf_size = 0;
+		let mut printers_len = 0;
 
 		// First call to determine the buffer size (we use level 4 here, thus this is fast)
 		// SAFETY: the only pointers we pass in are `buf_size` and `printers_len`, which are valid.
@@ -45,15 +45,17 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			return vec![];
 		}
 
+		// SAFETY: `buf` has been successfully written to by `EnumPrintersW` and has `printers_len`
+		// elements.
 		unsafe {
 			slice::from_raw_parts(
 				buf.as_ptr() as *mut Printing::PRINTER_INFO_4W,
 				printers_len as usize,
 			)
+			.iter()
+			.map(map_printer_info_4_to_printer)
+			.collect::<Vec<_>>()
 		}
-		.iter()
-		.map(map_printer_info_4_to_printer)
-		.collect::<Vec<_>>()
 	}
 
 	fn get_printer(_name: &str) -> Option<Printer> {
