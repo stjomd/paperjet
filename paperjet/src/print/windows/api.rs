@@ -9,7 +9,7 @@ use crate::options::PrintOptions;
 use crate::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
 impl CrossPlatformApi for PlatformSpecificApi {
-	fn get_printers() -> Vec<Printer> {
+	fn get_printers() -> Result<Vec<Printer>, PrintError> {
 		let mut buf_size = 0;
 		let mut printers_len = 0;
 
@@ -33,16 +33,14 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			EnumPrintersW(
 				Printing::PRINTER_ENUM_LOCAL | Printing::PRINTER_ENUM_CONNECTIONS,
 				None,
-				4,
+				5,
 				Some(&mut buf),
 				&mut buf_size,
 				&mut printers_len,
 			)
 		};
-
-		if result.is_err() {
-			// TODO: return result
-			return vec![];
+		if let Err(e) = result {
+			return Err(PrintError::Backend(format!("{e}")));
 		}
 
 		// SAFETY: `buf` has been successfully written to by `EnumPrintersW` and has `printers_len`
@@ -54,7 +52,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 			)
 			.iter()
 			.map(map_printer_info_4_to_printer)
-			.collect::<Vec<_>>()
+			.collect::<Result<Vec<_>, _>>()
 		}
 	}
 
@@ -76,12 +74,12 @@ impl CrossPlatformApi for PlatformSpecificApi {
 }
 
 /// Converts the [`PRINTER_INFO_4W`] instance to a [`Printer`] instance.
-fn map_printer_info_4_to_printer(info: &Printing::PRINTER_INFO_4W) -> Printer {
-	Printer {
-		identifier: unsafe { info.pPrinterName.to_string().unwrap() },
-		name: unsafe { info.pPrinterName.to_string().unwrap() },
+fn map_printer_info_4_to_printer(info: &Printing::PRINTER_INFO_4W) -> Result<Printer, PrintError> {
+	Ok(Printer {
+		identifier: unsafe { info.pPrinterName.to_string()? },
+		name: unsafe { info.pPrinterName.to_string()? },
 		instance: None,
 		is_default: false,
 		options: HashMap::new(),
-	}
+	})
 }

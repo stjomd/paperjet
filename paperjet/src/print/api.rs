@@ -8,7 +8,7 @@ use crate::options::PrintOptions;
 
 /// Returns a vector of available printers.
 /// If no printers are available on this system, returns an empty list.
-pub fn get_printers() -> Vec<Printer> {
+pub fn get_printers() -> Result<Vec<Printer>, PrintError> {
 	PlatformSpecificApi::get_printers()
 }
 
@@ -38,7 +38,7 @@ pub struct PlatformSpecificApi;
 /// A trait that defines the public API of this crate.
 pub trait CrossPlatformApi {
 	/// See [`crate::print::get_printers()`].
-	fn get_printers() -> Vec<Printer>;
+	fn get_printers() -> Result<Vec<Printer>, PrintError>;
 
 	/// See [`crate::print::get_printer()`].
 	fn get_printer(name: &str) -> Option<Printer>;

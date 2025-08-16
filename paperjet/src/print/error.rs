@@ -18,6 +18,10 @@ pub enum PrintError {
 	#[error("could not convert to C string: {0}")]
 	StringConversion(#[from] std::ffi::NulError),
 
+	/// An error during conversion to a UTF-8 string from a UTF-16 string.
+	#[error("could not convert from UTF-16: {0}")]
+	Utf16Error(#[from] std::string::FromUtf16Error),
+
 	/// An error indicating that necessary information for a process could not be retrieved.
 	#[error("could not retrieve necessary information: {0}")]
 	NecessaryInformationMissing(String),

@@ -8,7 +8,9 @@ use crate::cli::snapshot;
 
 /// Returns printers in a sorted order.
 pub fn get_sorted_printers() -> Vec<Printer> {
-	let mut printers = paperjet::get_printers();
+	let Ok(mut printers) = paperjet::get_printers() else {
+		return vec![];
+	};
 	printers.sort_by(|a, b| {
 		if a.is_default {
 			return Ordering::Less;
@@ -62,7 +64,7 @@ fn get_printer_by_name_from_snapshot(name: &str) -> Option<Printer> {
 }
 // Retrieves the printer corresponding to the specified `name` from the API.
 fn get_printer_by_name_from_api(name: &str) -> Option<Printer> {
-	let printers = paperjet::get_printers();
+	let printers = paperjet::get_printers().ok()?;
 	printers.into_iter().find(|p| {
 		p.identifier == name
 			|| p.name.to_lowercase() == name.to_lowercase()
