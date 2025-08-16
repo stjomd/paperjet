@@ -9,15 +9,15 @@ use crate::options::PrintOptions;
 /// Returns a vector of available printers.
 /// If no printers are available on this system, returns an empty list.
 pub fn get_printers() -> Result<Vec<Printer>, PrintError> {
-	PlatformSpecificApi::get_printers()
+	Platform::get_printers()
 }
 
 pub fn get_printer(name: &str) -> Option<Printer> {
-	PlatformSpecificApi::get_printer(name)
+	Platform::get_printer(name)
 }
 
 pub fn get_default_printer() -> Option<Printer> {
-	PlatformSpecificApi::get_default_printer()
+	Platform::get_default_printer()
 }
 
 /// Prints the contents of each of the specified [`readers`].
@@ -26,17 +26,17 @@ where
 	I: IntoIterator<Item = R>,
 	R: Read,
 {
-	PlatformSpecificApi::print(readers, printer, options)
+	Platform::print(readers, printer, options)
 }
 
 // MARK: - Public API trait
 
 /// A unit struct representing the current platform.
-/// There should be a platform-specific implementation of [`PlatformApi`] for this struct,
+/// There should be a platform-specific implementation of [`PaperjetApi`] for this struct,
 /// and a module containing this implementation should be imported into the crate.
-pub struct PlatformSpecificApi;
+pub struct Platform;
 /// A trait that defines the public API of this crate.
-pub trait CrossPlatformApi {
+pub trait PaperjetApi {
 	/// See [`crate::print::get_printers()`].
 	fn get_printers() -> Result<Vec<Printer>, PrintError>;
 

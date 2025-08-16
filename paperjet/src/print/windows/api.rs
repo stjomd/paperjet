@@ -8,9 +8,9 @@ use windows::core::PWSTR;
 use crate::error::PrintError;
 use crate::options::PrintOptions;
 use crate::windows::printer::PrinterHandle;
-use crate::{CrossPlatformApi, PlatformSpecificApi, Printer};
+use crate::{PaperjetApi, Platform, Printer};
 
-impl CrossPlatformApi for PlatformSpecificApi {
+impl PaperjetApi for Platform {
 	fn get_printers() -> Result<Vec<Printer>, PrintError> {
 		let mut buf_size = 0;
 		let mut printers_len = 0;
@@ -64,7 +64,7 @@ impl CrossPlatformApi for PlatformSpecificApi {
 				return Some(default_printer);
 			}
 		}
-		
+
 		// Just check if we can obtain a handle to a printer with this name.
 		if PrinterHandle::try_new(name).is_err() {
 			return None;

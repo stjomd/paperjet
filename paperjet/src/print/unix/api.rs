@@ -9,9 +9,9 @@ use crate::print::unix::cups;
 use crate::print::unix::dest::{CupsDestination, CupsDestinationInfo, CupsDestinations};
 use crate::print::unix::job::CupsJob;
 use crate::print::unix::options::{CupsOption, CupsOptions};
-use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer, util};
+use crate::print::{PaperjetApi, Platform, Printer, util};
 
-impl CrossPlatformApi for PlatformSpecificApi {
+impl PaperjetApi for Platform {
 	fn get_printers() -> Vec<Printer> {
 		CupsDestinations::new()
 			.into_iter()
