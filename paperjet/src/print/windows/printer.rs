@@ -1,12 +1,11 @@
 use std::ptr;
 
-use windows::Win32::Foundation;
 use windows::Win32::Graphics::Printing;
 use windows::core::{HSTRING, PCWSTR};
 
 use crate::error::PrintError;
 
-pub struct PrinterHandle(*mut Foundation::HANDLE);
+pub struct PrinterHandle(*mut Printing::PRINTER_HANDLE);
 impl PrinterHandle {
 	pub fn try_new(name: &str) -> Result<Self, PrintError> {
 		let handle = ptr::null_mut();

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::{ptr, slice};
+use std::slice;
 
 use windows::Win32::Graphics::Printing;
 use windows::core::PWSTR;
@@ -85,12 +85,13 @@ impl PaperjetApi for Platform {
 		// First call to determine the string length
 		// SAFETY: the first argument can be a null pointer, and the second is a valid pointer to an
 		// integer.
-		let _ = unsafe { Printing::GetDefaultPrinterW(PWSTR(ptr::null_mut()), &mut len) };
+		let _ = unsafe { Printing::GetDefaultPrinterW(None, &mut len) };
 
 		// Second call to fill the buffer with the string bytes
 		// SAFETY: both pointers are valid and will be populated with valid contents by Windows.
 		let mut buf = vec![0u16; len as usize];
-		let status = unsafe { Printing::GetDefaultPrinterW(PWSTR(buf.as_mut_ptr()), &mut len) };
+		let status =
+			unsafe { Printing::GetDefaultPrinterW(Some(PWSTR(buf.as_mut_ptr())), &mut len) };
 		if !status.as_bool() {
 			return None;
 		}
