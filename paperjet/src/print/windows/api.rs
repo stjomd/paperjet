@@ -7,6 +7,7 @@ use windows::core::PWSTR;
 
 use crate::error::PrintError;
 use crate::options::PrintOptions;
+use crate::windows::printer::PrinterHandle;
 use crate::{CrossPlatformApi, PlatformSpecificApi, Printer};
 
 impl CrossPlatformApi for PlatformSpecificApi {
@@ -57,8 +58,25 @@ impl CrossPlatformApi for PlatformSpecificApi {
 		}
 	}
 
-	fn get_printer(_name: &str) -> Option<Printer> {
-		todo!("Not supported on Windows yet")
+	fn get_printer(name: &str) -> Option<Printer> {
+		if let Some(default_printer) = crate::get_default_printer() {
+			if default_printer.identifier == name {
+				return Some(default_printer);
+			}
+		}
+		
+		// Just check if we can obtain a handle to a printer with this name.
+		if PrinterHandle::try_new(name).is_err() {
+			return None;
+		}
+
+		Some(Printer {
+			identifier: name.to_owned(),
+			name: name.to_owned(),
+			instance: None,
+			is_default: false,
+			options: HashMap::new(),
+		})
 	}
 
 	fn get_default_printer() -> Option<Printer> {
