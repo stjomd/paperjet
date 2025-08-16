@@ -15,7 +15,7 @@ fn if_many_printers_exist_then_get_printers_returns_all() {
 		FakePrinter::try_new(false).expect("Could not create a fake printer"),
 	];
 	// Get all printers:
-	let printers = paperjet::get_printers();
+	let printers = paperjet::get_printers().expect("Could not get printers");
 
 	// Each of the fake printers must be present in the vector returned by get_printers.
 	// Since other printers may be present on the test runner's system, we can't make any other

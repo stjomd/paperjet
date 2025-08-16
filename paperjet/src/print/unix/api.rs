@@ -12,11 +12,11 @@ use crate::print::unix::options::{CupsOption, CupsOptions};
 use crate::print::{CrossPlatformApi, PlatformSpecificApi, Printer, util};
 
 impl CrossPlatformApi for PlatformSpecificApi {
-	fn get_printers() -> Vec<Printer> {
-		CupsDestinations::new()
+	fn get_printers() -> Result<Vec<Printer>, PrintError> {
+		Ok(CupsDestinations::new()
 			.into_iter()
 			.map(map_dest_to_printer)
-			.collect()
+			.collect())
 	}
 
 	fn get_printer(name: &str) -> Option<Printer> {
