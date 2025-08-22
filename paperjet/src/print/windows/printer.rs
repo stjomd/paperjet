@@ -1,28 +1,35 @@
-use std::ptr;
-
 use windows::Win32::Graphics::Printing;
-use windows::core::{HSTRING, PCWSTR};
 
 use crate::error::PrintError;
+use crate::windows::str::WideString;
 
-pub struct PrinterHandle(*mut Printing::PRINTER_HANDLE);
+/// A struct representing a handle to a Windows printer.
+/// Internally, it wraps [`Printing::PRINTER_HANDLE`] and follows RAII
+/// (the handle will be closed once the instance goes out of scope).
+pub struct PrinterHandle(Printing::PRINTER_HANDLE);
 impl PrinterHandle {
+	/// Obtains a handle to the printer with the specified name.
+	/// Returns `Err` if the handle could not be obtained. 
 	pub fn try_new(name: &str) -> Result<Self, PrintError> {
-		let handle = ptr::null_mut();
+		let mut handle = Default::default();
+		let w_name = WideString::from(name);
 
-		let h_name = HSTRING::from(name);
-		let name = PCWSTR::from_raw(h_name.as_ptr());
-
-		let result = unsafe { Printing::OpenPrinterW(name, handle, None) };
+		let result = unsafe { Printing::OpenPrinterW(w_name.as_pcwstr(), &mut handle, None) };
 		if let Err(e) = result {
-			return Err(PrintError::Backend(format!("{e}")));
+			let msg = format!("could not obtain handle for '{name}': {e}");
+			return Err(PrintError::Backend(msg));
 		}
 
 		Ok(Self(handle))
 	}
+	/// Returns the underlying [`Printing::PRINTER_HANDLE`] behind this instance.
+	pub fn unwrap(&self) -> Printing::PRINTER_HANDLE {
+		self.0
+	}
 }
+
 impl Drop for PrinterHandle {
 	fn drop(&mut self) {
-		let _ = unsafe { Printing::ClosePrinter(*self.0) };
+		let _ = unsafe { Printing::ClosePrinter(self.0) };
 	}
 }

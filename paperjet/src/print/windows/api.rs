@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::slice;
+use std::{ffi, slice};
 
 use windows::Win32::Graphics::Printing;
 use windows::core::PWSTR;
@@ -8,6 +8,7 @@ use windows::core::PWSTR;
 use crate::error::PrintError;
 use crate::options::PrintOptions;
 use crate::windows::printer::PrinterHandle;
+use crate::windows::str::WideString;
 use crate::{PaperjetApi, Platform, Printer};
 
 impl PaperjetApi for Platform {
@@ -106,12 +107,61 @@ impl PaperjetApi for Platform {
 		})
 	}
 
-	fn print<I, R>(_readers: I, _printer: Printer, _options: PrintOptions) -> Result<(), PrintError>
+	fn print<I, R>(readers: I, printer: Printer, _options: PrintOptions) -> Result<(), PrintError>
 	where
 		I: IntoIterator<Item = R>,
 		R: Read,
 	{
-		todo!("Not supported on Windows yet")
+		let handle = PrinterHandle::try_new(&printer.name)?;
+
+		let mut doc_name = WideString::from("paperjet");
+		let mut data_type = WideString::from("RAW");
+
+		let doc_info = Printing::DOC_INFO_1W {
+			pDocName: doc_name.as_pwstr(),
+			pOutputFile: PWSTR::null(),
+			pDatatype: data_type.as_pwstr(),
+		};
+
+		let job = unsafe { Printing::StartDocPrinterW(handle.unwrap(), 1, &doc_info) };
+		if job == 0 {
+			return Err(PrintError::Backend("StartDocPrinterW failed".to_owned()));
+		}
+
+		let status = unsafe { Printing::StartPagePrinter(handle.unwrap()) };
+		if !status.as_bool() {
+			return Err(PrintError::Backend("StartPagePrinter failed".to_owned()));
+		}
+
+		// FIXME: multiple readers
+		let mut reader = readers.into_iter().next().expect("no reader");
+		let mut buf = vec![];
+		let size = reader.read_to_end(&mut buf)?;
+		let mut written = 0;
+
+		let status = unsafe {
+			Printing::WritePrinter(
+				handle.unwrap(),
+				buf.as_ptr() as *const ffi::c_void,
+				size as u32,
+				&mut written,
+			)
+		};
+		if !status.as_bool() {
+			return Err(PrintError::Backend("WritePrinter failed".to_owned()));
+		}
+
+		let status = unsafe { Printing::EndPagePrinter(handle.unwrap()) };
+		if !status.as_bool() {
+			return Err(PrintError::Backend("EndPagePrinter failed".to_owned()));
+		}
+
+		let status = unsafe { Printing::EndDocPrinter(handle.unwrap()) };
+		if !status.as_bool() {
+			return Err(PrintError::Backend("EndDocPrinter failed".to_owned()));
+		}
+
+		Ok(())
 	}
 }
 
