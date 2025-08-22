@@ -11,12 +11,12 @@ use crate::print::unix::job::CupsJob;
 use crate::print::unix::options::{CupsOption, CupsOptions};
 use crate::print::{PaperjetApi, Platform, Printer, util};
 
-impl PaperjetApi for Platform {
+impl CrossPlatformApi for PlatformSpecificApi {
 	fn get_printers() -> Vec<Printer> {
 		CupsDestinations::new()
 			.into_iter()
 			.map(map_dest_to_printer)
-			.collect()
+			.collect())
 	}
 
 	fn get_printer(name: &str) -> Option<Printer> {
